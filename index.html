@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    
+    <body>
+        <div style="margin:50px auto 0 auto;width:500px">
+            <canvas id="canvas" width="500" height="500" style="border:1px solid #ccc;"/>
+        </div>
+    </body>
+    <script>
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        var scale = 1;
+        var canvasShiftX = 0;
+        var canvasShiftY = 0;
+        var imgArr = [];
+        var picWidth,picHeight;
+        var theWholeWidth,theWholeHeight;
+        var xShiftLength;
+        var yShiftLength;
+
+        
+        var picRootDirName = ['500','1000','5000'];
+        var picNamesArr = [
+            ['1-1','1-2'],
+            ['1-1','1-2','1-3','1-4','2-1','2-2','2-3','2-4'],
+            ['1-1','1-2','1-3','1-4','1-5','1-6','1-7','1-8','1-9','1-10','1-11','1-12','1-13','1-14','1-15','1-16','1-17','1-18','1-19','1-20',
+            '2-1','2-2','2-3','2-4','2-5','2-6','2-7','2-8','2-9','2-10','2-11','2-12','2-13','2-14','2-15','2-16','2-17','2-18','2-19','2-20',
+            '3-1','3-2','3-3','3-4','3-5','3-6','3-7','3-8','3-9','3-10','3-11','3-12','3-13','3-14','3-15','3-16','3-17','3-18','3-19','3-20',
+            '4-1','4-2','4-3','4-4','4-5','4-6','4-7','4-8','4-9','4-10','4-11','4-12','4-13','4-14','4-15','4-16','4-17','4-18','4-19','4-20',
+            '5-1','5-2','5-3','5-4','5-5','5-6','5-7','5-8','5-9','5-10','5-11','5-12','5-13','5-14','5-15','5-16','5-17','5-18','5-19','5-20',
+            '6-1','6-2','6-3','6-4','6-5','6-6','6-7','6-8','6-9','6-10','6-11','6-12','6-13','6-14','6-15','6-16','6-17','6-18','6-19','6-20']
+        ]
+
+        canvas.onmousewheel = scaleCanvas;
+
+        canvas.onmousedown=function(event){
+            console.log(theWholeHeight,theWholeWidth);
+            if(theWholeHeight <= 500 &&theWholeWidth<=500){
+                return;
+            }
+            var pos=windowToCanvas(canvas,event.clientX,event.clientY);
+            canvas.onmousemove=function(event){
+                canvas.style.cursor="move";
+                var pos1=windowToCanvas(canvas,event.clientX,event.clientY);
+                var x=pos1.x-pos.x;
+                var y=pos1.y-pos.y;
+                pos=pos1;
+                canvasShiftX+=x;
+                if(Math.abs(canvasShiftX) > xShiftLength){
+                    if(canvasShiftX > 0){
+                        canvasShiftX = xShiftLength;
+                    } else {
+                        canvasShiftX = -xShiftLength;
+                    }
+                }
+                canvasShiftY+=y;
+                if(Math.abs(canvasShiftY) > yShiftLength){
+                    if(canvasShiftY > 0){
+                        canvasShiftY = yShiftLength;
+                    } else {
+                        canvasShiftY = -yShiftLength;
+                    }
+                }
+                reloadImg();
+                console.log(canvasShiftX,canvasShiftY)
+            }
+            canvas.onmouseup=function(){
+                canvas.onmousemove=null;
+                canvas.onmouseup=null;
+                canvas.style.cursor="default";
+            }
+        }
+
+        function windowToCanvas(canvas,x,y){
+            var bbox = canvas.getBoundingClientRect();
+            return {
+                x:x - bbox.left - (bbox.width - canvas.width) / 2,
+                y:y - bbox.top - (bbox.height - canvas.height) / 2
+            };
+        }
+        
+
+        initCanvas();
+
+        // function reloadCanvas(){
+        //     var i = 0;
+        //     while(i<imgArr.length){
+        //         context.clearRect(posX,posY,43*scale,85*scale);
+        //         context.drawImage(imgArr[i],posX,posY,43*scale,85*scale);
+        //     }
+        // }
+
+        function initCanvas(){
+            // picWidth = scale * 250;
+            // picHeight = scale * 250;
+            
+            var i=0;
+            var dirName = picRootDirName[scale-1];
+            var picNames = picNamesArr[scale-1];
+            var xLength = picNames[picNames.length-1].split('-')[1];
+            var yLength = picNames[picNames.length-1].split('-')[0];
+            theWholeWidth = xLength*250;
+            theWholeHeight = yLength*250;
+            var startX = (500 - xLength*250)/2+canvasShiftX;
+            var startY = (500 - yLength*250)/2+canvasShiftY;
+            xShiftLength = (theWholeWidth - 500)/2;
+            yShiftLength = (theWholeHeight - 500)/2;
+            while(i<picNames.length){
+                var picName = picNames[i];
+                var posIndexX = picName.split('-')[1];
+                var posIndexY = picName.split('-')[0];
+                var posX = startX + 250 * (posIndexX-1);
+                var posY = startY + 250 * (posIndexY-1);
+                console.log('img/'+dirName+'/'+picName+'.png');
+                
+                load('img/'+dirName+'/'+picName+'.png',posX,posY);
+                i++;
+            }
+        }
+
+        function load(src,x,y){
+            var img = new Image();
+            img.src=src;
+            img.onload = function(){
+                console.log(img.width);
+                context.clearRect(x,y,250,250);
+                console.log(x,y,250,250);
+                context.drawImage(img,x,y,250,250);
+            }
+            imgArr.push([img,x,y]);
+        }
+
+        function reloadImg(){
+            // var startX = (500 - xNum*43*scale)/2;
+            // var startY = (500 - yNum*85*scale)/2;
+            // var num = xNum*yNum;
+            var i=0;
+            while(i<imgArr.length){
+                // var posX = startX+43*(i%xNum)*scale;
+                // var posY = startY+85 * Math.floor(i/xNum)*scale;
+                context.clearRect(imgArr[i][1]+canvasShiftX,imgArr[i][2]+canvasShiftY,250,250);
+                context.drawImage(imgArr[i][0],imgArr[i][1]+canvasShiftX,imgArr[i][2]+canvasShiftY,250,250);
+                i++;
+            }
+        }
+
+        function scaleCanvas(e){
+            imgArr = [];
+            // canvas.onmousewheel = null;
+
+            var tempScale; 
+            var step = 0.1;
+            var zoomBig;
+            console.log(e);
+            if(e.wheelDeltaY>0){
+                if(scale == 8){
+                    return;
+                }
+                scale = scale+1;
+                // step = scale/10;
+            } else if(e.wheelDeltaY < 0){
+                if(scale == 1){
+                    return;
+                }
+                scale = scale-1;
+                // step = -(tempScale/10);
+            }
+            initCanvas();
+        }
+    </script>
+</html>

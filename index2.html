@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+    </head>
+    
+    <body>
+        <button onclick="scaleCanvas(1)">5倍</button>
+        <button onclick="scaleCanvas(2)">20倍</button>
+        <button onclick="scaleCanvas(3)">100倍</button>
+        <button onclick="onAddIconClick()">添加标记</button>
+        <div style="margin:50px auto 0 auto;width:1000px">
+            <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;"/>
+        </div>
+        <div class="biaoji" style="display:none;">标记位置：125，125</div>
+    </body>
+    <script>
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        var scale = 1;
+        var imgArr = [];
+        var picWidth,picHeight;
+        var theWholeWidth,theWholeHeight;
+        var xShiftLength,yShiftLength;
+        var startX,startY;
+        var canvasShiftX = 0,canvasShiftY = 0;
+        
+        var loadImgNum = 0;
+        var loadTotalNum;
+
+        var imgIcon;
+        var iconAddArr = [];
+        var toAddIcon = false;
+
+        
+        var picRootDirName = ['500','1000','5000'];
+        var picNamesArr = [
+            ['1-1','1-2'],
+            ['1-1','1-2','1-3','1-4','2-1','2-2','2-3','2-4'],
+            ['1-1','1-2','1-3','1-4','1-5','1-6','1-7','1-8','1-9','1-10','1-11','1-12','1-13','1-14','1-15','1-16','1-17','1-18','1-19','1-20',
+            '2-1','2-2','2-3','2-4','2-5','2-6','2-7','2-8','2-9','2-10','2-11','2-12','2-13','2-14','2-15','2-16','2-17','2-18','2-19','2-20',
+            '3-1','3-2','3-3','3-4','3-5','3-6','3-7','3-8','3-9','3-10','3-11','3-12','3-13','3-14','3-15','3-16','3-17','3-18','3-19','3-20',
+            '4-1','4-2','4-3','4-4','4-5','4-6','4-7','4-8','4-9','4-10','4-11','4-12','4-13','4-14','4-15','4-16','4-17','4-18','4-19','4-20',
+            '5-1','5-2','5-3','5-4','5-5','5-6','5-7','5-8','5-9','5-10','5-11','5-12','5-13','5-14','5-15','5-16','5-17','5-18','5-19','5-20',
+            '6-1','6-2','6-3','6-4','6-5','6-6','6-7','6-8','6-9','6-10','6-11','6-12','6-13','6-14','6-15','6-16','6-17','6-18','6-19','6-20',
+            '7-1','7-2','7-3','7-4','7-5','7-6','7-7','7-8','7-9','7-10','7-11','7-12','7-13','7-14','7-15','7-16','7-17','7-18','7-19','7-20',
+            '8-1','8-2','8-3','8-4','8-5','8-6','8-7','8-8','8-9','8-10','8-11','8-12','8-13','8-14','8-15','8-16','8-17','8-18','8-19','8-20']
+        ]
+
+        canvas.onmousedown=function(event){
+            if(toAddIcon){
+                var pos1=windowToCanvas(canvas,event.clientX,event.clientY);
+                var posX = pos1.x;
+                var posY = pos1.y;
+                addIcon(posX,posY);
+                toAddIcon = false;
+                return;
+            }
+            if(theWholeHeight <= 500 &&theWholeWidth<=1000){
+                return;
+            }
+            var pos=windowToCanvas(canvas,event.clientX,event.clientY); 
+            canvas.onmousemove=function(event){
+                canvas.style.cursor="move";
+                var pos1=windowToCanvas(canvas,event.clientX,event.clientY);
+                var x=pos1.x-pos.x;
+                var y=pos1.y-pos.y;
+                pos=pos1;
+                canvasShiftX+=x;
+                if(Math.abs(canvasShiftX) > xShiftLength){
+                    canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+                }
+                canvasShiftY+=y;
+                if(Math.abs(canvasShiftY) > yShiftLength){
+                    canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+                }
+                reloadImg();
+            }
+            canvas.onmouseup=function(){
+                canvas.onmousemove=null;
+                canvas.onmouseup=null;
+                canvas.style.cursor="default";
+            }
+        }
+
+        function windowToCanvas(canvas,x,y){
+            var bbox = canvas.getBoundingClientRect();
+            return {
+                x:x - bbox.left - (bbox.width - canvas.width) / 2,
+                y:y - bbox.top - (bbox.height - canvas.height) / 2
+            };
+        }
+        
+
+        initCanvas();
+        function initCanvas(){
+            var i=0;
+            var dirName = picRootDirName[scale-1];
+            var picNames = picNamesArr[scale-1];
+            var xLength = picNames[picNames.length-1].split('-')[1];
+            var yLength = picNames[picNames.length-1].split('-')[0];
+
+            theWholeWidth = xLength*250;
+            theWholeHeight = yLength*250;
+
+            console.log(theWholeWidth,theWholeHeight)
+
+            canvasShiftX = 0;
+            canvasShiftY = 0;
+
+            startX = (1000 - xLength*250)/2+canvasShiftX;
+            startY = (500 - yLength*250)/2+canvasShiftY;
+
+            xShiftLength = (250*xLength - 1000)/2;
+            xShiftLength = xShiftLength < 0 ? 0:xShiftLength;
+            yShiftLength = (250*yLength - 500)/2;
+            yShiftLength = yShiftLength < 0?0:yShiftLength;
+
+            
+            loadImgNum = 0;
+            loadTotalNum = picNames.length;
+            while(i<picNames.length){
+                var picName = picNames[i];
+                var posIndexX = picName.split('-')[1];
+                var posIndexY = picName.split('-')[0];
+                var posX = startX + 250 * (posIndexX-1);
+                var posY = startY + 250 * (posIndexY-1);
+                
+                load('img/'+dirName+'/'+picName+'.png',posX,posY);
+                i++;
+            }
+            
+        }
+
+        function load(src,x,y){
+            var img = new Image();
+            img.src=src;
+            img.onload = function(){
+                context.clearRect(x,y,250,250);
+                context.drawImage(img,x,y,250,250);
+                loadImgNum++;
+                if(loadImgNum == loadTotalNum){
+                    loadIcon();
+                }
+            }
+            imgArr.push([img,x,y]);
+        }
+
+        function addIcon(posX,posY){
+            var beishu = scale;
+            beishu = (beishu == 3 ? 8 : beishu);
+
+            var originX = posX - startX - canvasShiftX
+            var originY = posY - startY - canvasShiftY;
+
+            iconAddArr.push([originX/theWholeWidth,originY/theWholeHeight]);
+
+            var x = startX +  originX + canvasShiftX;
+            var y = startY +  originY + canvasShiftY;
+
+            if(!imgIcon){
+                imgIcon = new Image();
+                imgIcon.src='./img/img.png'
+                imgIcon.onload = function(){
+                    context.drawImage(imgIcon,posX-10,posY-10,20,20);   
+                }
+            } else {
+                context.drawImage(imgIcon,posX-10,posY-10,20,20);
+            }
+        }
+
+        function reloadImg(){
+            var i=0;
+            while(i<imgArr.length){
+                context.drawImage(imgArr[i][0],imgArr[i][1]+canvasShiftX,imgArr[i][2]+canvasShiftY,250,250);
+                i++;
+            }
+            loadIcon();
+        }
+
+        function loadIcon(){
+            for(var i=0;i<iconAddArr.length;i++){
+                var x = startX +  iconAddArr[i][0]*theWholeWidth + canvasShiftX;
+                var y = startY +  iconAddArr[i][1]*theWholeHeight + canvasShiftY;
+                console.log('icon',x,y);
+                if(!imgIcon){
+                    imgIcon = new Image();
+                    imgIcon.src = './img/img.png';
+                    imgIcon.onload = function(){
+                        context.drawImage(imgIcon,x-10,y-10,20,20);
+                    }
+                } else {
+                    context.drawImage(imgIcon,x-10,y-10,20,20);
+                }
+            }
+        }
+
+        function onAddIconClick(){
+            toAddIcon = true;
+        }
+
+
+        function scaleCanvas(num){
+            imgArr = [];
+            if(scale == num){
+                return;
+            }
+            context.clearRect(-10000,-10000,50000,50000);
+            scale = num;
+            initCanvas();
+        }
+    </script>
+</html>

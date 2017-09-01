@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+    <style type="text/css">
+        .markPoint{
+            width: 10px;
+            height:10px;
+            background: red;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <button onclick="scaleCanvas(1)">5倍</button>
+        <button onclick="scaleCanvas(2)">20倍</button>
+        <button onclick="scaleCanvas(3)">100倍</button> -->
+        <button onclick="onAddIconClick()">添加标记</button>
+    <div style="margin:50px auto 0 auto;width:1000px;position:relative" id="canvas-container">
+        <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
+    </div>
+    <div id="pic" style="width:500px;height:250px;background-color:#ccc"></div>
+    <div class="biaoji" style="display:none;">标记位置：125，125</div>
+</body>
+<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script>
+    /*前台网站预览该图片时实现：
+        （1）如果该图片超过4M以上，将进行图片切割加载，切割加载后组成完整图片显示，支持图片放大缩小、
+            标注信息查看，每个图片页面提供二维码，扫一扫后支持手机浏览器预览该图片页面，
+            预览效果同pc端效果一致，切图片加载速度流畅；
+        （2）点击缩略图的任意地方，可快速定位到大图的相应位置；
+        （3）每个图片页面上都有个检索框，可检索本页图片上的标注文字，检索后可快速定位到大图中打点的位置；
+        （4）图片仅能浏览，不能进行复制、下载。*/
+
+    var url = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=e897862c-ec01-434f-afb5-7ac0356d1012";
+    url = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=99d426ad-3055-4b6e-a677-ef2a776865f1";
+
+
+    url="http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=4043b6bc-6629-4f56-85eb-7bae1abadba9"
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+
+    var scale = 1, imgScale;
+    var imgWidth = 250, imgHeight = 250;
+    var theWholeWidth, theWholeHeight, xLength, yLength;
+    var xShiftLength, yShiftLength;
+    var canvasShiftX = 0, canvasShiftY = 0;
+    var startX, startY;
+    var imgArr = {}, loadImgNum = 0, imgTotalNum,imgSizeArr;
+    var imgIcon, iconAddArr = [],addIcon=false;
+    var imgDirName, imgNameArr;
+    var canvasHeight = canvas.height;
+    var canvasWidth = canvas.width;
+    var renderNum = 0;
+    var multiScale;
+    var picRootDirName;
+    var picNamesArr;
+    var picName;
+    var picSuffix;
+    var picResolutionArr;
+    var picScaleDirName;
+    var picRootDir;
+    var markDataArr;
+    var website = "http://61.155.85.77:6601/";
+
+    var picInfoArr=[];
+
+    $.ajax({
+        type: 'get',
+        dataType: 'jsonp',
+        url: url,
+        async: true,
+        success: function (data) {
+            if (data.success) {
+                var picInfo = data.picInfo;
+                picScaleDirName = JSON.parse(picInfo.picScaleDirName);
+                picNamesArr = JSON.parse(picInfo.picNamesArr);
+                picName = picInfo.picName;
+                picSuffix = picInfo.picSuffix;
+                picResolutionArr = JSON.parse(picInfo.picResolutionArr);
+                picRootDir = picInfo.picRootDirName;
+                console.log(picResolutionArr,picNamesArr)
+
+                initParameters();
+                drawCanvas();
+
+                $.ajax({
+                    type:'get',
+                    url:website+'TrueCMS/messageController/getMsgImgMarkInfo.do',
+                    dataType:'jsonp',
+                    async:true,
+                    data:{
+                        msgId: "99d426ad-3055-4b6e-a677-ef2a776865f1"
+                    },
+                    success:function(data){
+                        markDataArr = data;
+                        showMarks(data);
+                        console.log(data);
+                    }
+                })
+            }
+        }
+    })
+
+    // initParameters();
+    // drawCanvas();
+    // canvas.onmousewheel = onmousewheel;
+
+    function onAddIconClick(){
+        addIcon = true;
+    }
+
+    function addIconFunc(posX,posY){
+        var originX = posX - startX - canvasShiftX
+        var originY = posY - startY - canvasShiftY;
+
+        var url = "TrueCMS/messageController/mergeMsgImgMarkInfo.do";
+        console.log(originX,originY);
+        console.log(Number((originX/theWholeWidth).toFixed(8)),Number((originY/theWholeHeight).toFixed(8)));
+        $.ajax({
+            type:'post',
+            dataType:'jsonp',
+            url:website+ url,
+            async:'true',
+            data:{
+                msgId:"99d426ad-3055-4b6e-a677-ef2a776865f1",
+                markx:Number((originX/theWholeWidth).toFixed(8)),
+                marky:Number((originY/theWholeHeight).toFixed(8)),
+            },
+            success:function(data){
+                $.ajax({
+                    type:'get',
+                    url:website+'TrueCMS/messageController/getMsgImgMarkInfo.do',
+                    dataType:'jsonp',
+                    async:true,
+                    data:{
+                       msgId: "99d426ad-3055-4b6e-a677-ef2a776865f1"
+                    },
+                    success:function(data){
+                        markDataArr=data;
+                        showMarks(data);
+                        console.log(data);
+                    }
+                })
+            }
+        })        
+    }
+
+    function showMarks(data){
+        if(markDataArr){
+            var points = document.getElementsByClassName('markPoint');
+            for(var i=0;i<points.length;i++){
+                points[i].remove();
+            }
+            var markArr = markDataArr.imgMarkList;
+            var container = document.getElementById('canvas-container');
+
+            var innerHtml = '';
+            for(var i=0;i<markArr.length;i++){
+                var posX = theWholeWidth*markArr[i].markx;
+                var posY = theWholeHeight*markArr[i].marky;
+                var x = startX +  posX + canvasShiftX;
+                var y = startY +  posY + canvasShiftY;
+                if(x < 0 || x > canvasWidth || y < 0 || y>canvasHeight){
+                    continue;
+                }
+                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px"></div>');
+            }
+            $(container).append(innerHtml);
+        }
+    }
+
+    canvas.onmousedown = function (e) {
+        var pos = windowToCanvas(canvas, event.clientX, event.clientY);
+        if(addIcon){
+            console.log('addIcon');
+            addIcon = false;
+            addIconFunc(pos.x,pos.y);
+            return;
+        }
+        canvas.onmousemove = function () {
+            canvas.style.cursor = "move";
+            var pos1 = windowToCanvas(canvas, event.clientX, event.clientY);
+            var x = pos1.x - pos.x;
+            var y = pos1.y - pos.y;
+            pos = pos1;
+            canvasShiftX += x;
+            if (Math.abs(canvasShiftX) > xShiftLength) {
+                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+            }
+            canvasShiftY += y;
+            if (Math.abs(canvasShiftY) > yShiftLength) {
+                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+            }
+            drawCanvas();
+            showMarks();
+        }
+
+        canvas.onmouseup = function () {
+            canvas.onmousemove = null;
+            canvas.onmouseup = null;
+            canvas.style.cursor = "";
+        }
+    }
+
+    var smallPic = document.getElementById('pic');
+
+    smallPic.onclick = function (e) {
+        var offsetX = e.offsetX;
+        var offsetY = e.offsetY;
+        var width = smallPic.clientWidth;
+        var height = smallPic.clientHeight;
+
+        var opX = theWholeWidth * 　(offsetX / width);
+        var opY = theWholeHeight * (offsetY / height);
+
+        canvasShiftX = theWholeWidth / 2 - opX;
+        canvasShiftY = canvasHeight / 2 - opY;
+
+        if (Math.abs(canvasShiftX) > xShiftLength) {
+            canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+        }
+
+        if (Math.abs(canvasShiftY) > yShiftLength) {
+            canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+        }
+        drawCanvas();
+    }
+
+    function windowToCanvas(canvas, x, y) {
+        var bbox = canvas.getBoundingClientRect();
+        return {
+            x: x - bbox.left - (bbox.width - canvas.width) / 2,
+            y: y - bbox.top - (bbox.height - canvas.height) / 2
+        };
+    }
+
+    function getScaleGap(scale,wheelData){
+        var scaleStep = 0;
+        var cScale = scale;
+        if(wheelData > 0){
+            for(var i=0;i<picScaleDirName.length;i++){
+                var indexScale = picScaleDirName[i];
+                if(cScale < indexScale){
+                    if(i > 0){
+                        var preScale = picScaleDirName[i-1];
+                        scaleStep = Number(((indexScale-preScale)/5).toFixed(1));
+                    }
+                    break;
+                }
+            }
+        } else {
+            for(var i=0;i< picScaleDirName.length;i++){
+                var indexScale = picScaleDirName[i];
+                if(cScale <= indexScale){
+                    if(i>0){
+                        var preScale = picScaleDirName[i-1];
+                        scaleStep = -Number(((indexScale - preScale)/5).toFixed(1));
+                    }
+                    break;
+                }
+            }
+        }
+        return scaleStep;
+    }
+
+    function onmousewheel(e) {
+        var scaleStep = getScaleGap(scale,e.wheelDelta);
+
+        scale = Number((scale + scaleStep).toFixed(1));
+        scale = scale < picScaleDirName[0] ? picScaleDirName[0] : scale;
+        scale = scale > picScaleDirName[picScaleDirName.length-1] ?  picScaleDirName[picScaleDirName.length-1] : scale;  
+        canvas.onmousewheel = null;
+        initParameters();
+        drawCanvas();
+        showMarks();
+    }
+
+    function initParameters() {
+        multiScale = Number((scale - parseInt(scale)).toFixed(8));
+        imgDirName = Math.floor(scale);
+        console.log(imgDirName);
+        var nameArrIndex = 1;
+        for(var i=0;i<picScaleDirName.length;i++){
+            if(imgDirName < picScaleDirName[i]){
+                nameArrIndex = i-1;
+                break;
+            } else if(imgDirName == picScaleDirName[i]){
+                nameArrIndex = i;
+            }
+        }
+        
+        imgDirName = picScaleDirName[nameArrIndex];
+        imgNameArr = picNamesArr[nameArrIndex];
+        imgSizeArr = picResolutionArr[nameArrIndex];
+        imgTotalNum = imgNameArr.length;
+        xLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[1]);
+        yLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[0]);
+
+        multiScale = Number((scale - imgDirName).toFixed(8));
+        console.log(scale,imgDirName);
+
+        theWholeWidth = 0;
+        theWholeHeight = 0;
+        for(var i=0;i<xLength;i++){
+            theWholeWidth += (Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName));
+        }
+        for(var i=0;i<yLength;i++){
+            theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
+        }
+
+        canvasShiftX = 0;
+        canvasShiftY = 0;
+
+        console.log(scale,theWholeWidth,theWholeHeight);
+
+        startX = (canvasWidth - theWholeWidth) / 2;
+        startY = (canvasHeight - theWholeHeight) / 2;
+
+        xShiftLength = (theWholeWidth - canvasWidth) / 2;
+        xShiftLength = xShiftLength < 0 ? 0 : xShiftLength;
+        yShiftLength = (theWholeHeight - canvasHeight) / 2;
+        yShiftLength = yShiftLength < 0 ? 0 : yShiftLength;
+
+        clearExtraRect();
+
+        function clearExtraRect() {
+            var extraHalfW = (canvasWidth - theWholeWidth) / 2;
+            var extraHalfH = (canvasHeight - theWholeHeight) / 2;
+
+            extraHalfW = extraHalfW < 0 ? 0 : extraHalfW;
+            extraHalfH = extraHalfH < 0 ? 0 : extraHalfH;
+
+            context.clearRect(0, 0, canvasWidth, extraHalfH);
+            context.clearRect(0, theWholeHeight + extraHalfH, canvasWidth, extraHalfH);
+            context.clearRect(0, extraHalfH, extraHalfW, theWholeHeight);
+            context.clearRect(extraHalfW + theWholeWidth, extraHalfH, extraHalfW, theWholeHeight);
+        }
+    }
+
+    function drawCanvas() {
+        loadImgNum = 0;
+        renderNum = 0;
+        var i = 0;
+        var renderArr = [];
+        while (i < imgNameArr.length) {
+            var picName = imgNameArr[i];
+            var posIndexX = picName.split('-')[1];
+            var posIndexY = picName.split('-')[0];
+
+            var width = Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName);
+            var height = Number(imgSizeArr[i].split('*')[1])*(1+multiScale/imgDirName);
+            var posX=0;
+            for(var j=1;j<posIndexX;j++){
+                var cWidth = parseInt(imgSizeArr[i-j].split('*')[0])*(1+multiScale/imgDirName);
+                posX+=cWidth;
+            }
+            var posY = 0;
+
+            for(var j=1;j<posIndexY;j++){
+
+                var cHeight = parseInt(imgSizeArr[i-xLength*j].split('*')[1])*(1+multiScale/imgDirName);
+                posY += cHeight;
+            }
+            posX = startX + posX + canvasShiftX;
+            posY = startY + posY + canvasShiftY;
+
+            if (shouldRender(posX, posY)) {
+                renderNum++;
+                renderArr.push({
+                    imgDirName: imgDirName,
+                    picName: picName,
+                    posX: posX,
+                    posY: posY,
+                    posIndexX: posIndexX,
+                    posIndexY: posIndexY,
+                    width:width,
+                    height:height
+                })
+            }
+            i++;
+        }
+
+        for (var i = 0; i < renderArr.length; i++) {
+            var item = renderArr[i];
+            load(website +picRootDir+'/'+ item.imgDirName + '/' + item.picName + '.'+picSuffix, item.posX, item.posY, item.posIndexX, item.posIndexY,item.width,item.height);
+        }
+
+        function shouldRender(x, y) {
+            var bool1 = x >= 0 && x <= canvasWidth;
+            var bool2 = y >= 0 && y <= canvasHeight;
+            var bool3 = x + imgWidth*(1+multiScale/imgDirName) >= 0 && x + imgWidth*(1+multiScale/imgDirName) <= canvasWidth;
+            var bool4 = y + imgHeight*(1+multiScale/imgDirName) >= 0 && y + imgHeight*(1+multiScale/imgDirName) <= canvasHeight;
+
+            var bool12 = bool1 && bool2;
+            var bool14 = bool1 && bool4;
+            var bool32 = bool3 && bool2;
+            var bool34 = bool3 && bool4;
+
+            return (bool12 || bool14 || bool32 || bool34);
+        }
+    }
+
+    function load(src, x, y, posX, posY,width,height) {
+        context.clearRect(x, y, imgWidth, imgHeight);
+        if (imgArr[imgDirName] && imgArr[imgDirName][posX + ',' + posY]) {
+            context.drawImage(imgArr[imgDirName][posX + ',' + posY], x, y, width, height);
+            loadImgNum++;
+
+            if (loadImgNum == renderNum) {
+                canvas.onmousewheel = onmousewheel;
+            }
+        } else {
+            var img = new Image();
+            img.src = src;
+            img.onload = function () {
+                context.drawImage(img, x, y, width, height);
+                loadImgNum++;
+
+                if (loadImgNum == renderNum) {
+                    canvas.onmousewheel = onmousewheel;
+                }
+
+                imgArr[imgDirName][posX + ',' + posY] = img;
+            }
+            if (!imgArr[imgDirName]) {
+                imgArr[imgDirName] = {};
+            }
+            img.onerror = function(){
+            }
+            
+        }
+    }
+</script>
+
+</html>

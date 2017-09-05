@@ -93,7 +93,6 @@
                 y:y - bbox.top - (bbox.height - canvas.height) / 2
             };
         }
-        
 
         initCanvas();
         function initCanvas(){
@@ -106,7 +105,7 @@
             theWholeWidth = xLength*250;
             theWholeHeight = yLength*250;
 
-            console.log(theWholeWidth,theWholeHeight)
+            console.log(theWholeWidth,theWholeHeight);
 
             canvasShiftX = 0;
             canvasShiftY = 0;
@@ -127,7 +126,7 @@
                 var posIndexY = picName.split('-')[0];
                 var posX = startX + 250 * (posIndexX-1);
                 var posY = startY + 250 * (posIndexY-1);
-                
+                   
                 load('img/'+dirName+'/'+picName+'.png',posX,posY);
                 i++;
             }
@@ -199,7 +198,6 @@
         function onAddIconClick(){
             toAddIcon = true;
         }
-
 
         function scaleCanvas(num){
             imgArr = [];

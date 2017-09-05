@@ -4,27 +4,60 @@
 <head>
     <title></title>
     <meta charset="UTF-8">
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type="text/css">
         .markPoint{
             width: 10px;
             height:10px;
             background: red;
             position: absolute;
+            z-index: 2;
+        }
+
+        .slideBar{
+            
         }
     </style>
 </head>
 
 <body>
-    <!-- <button onclick="scaleCanvas(1)">5倍</button>
-        <button onclick="scaleCanvas(2)">20倍</button>
-        <button onclick="scaleCanvas(3)">100倍</button> -->
-        <button onclick="onAddIconClick()">添加标记</button>
-    <div style="margin:50px auto 0 auto;width:1000px;position:relative" id="canvas-container">
+    <div class="scale-btn-con" style="display:inline-block;width:150px"></div>
+    <button onclick="onAddIconClick()">标注</button>
+    <label>
+        <input type="checkbox" onchange="onShowSmallImgChange()">
+        <lable>缩略图</lable>
+    </label>
+    <div style="margin:20px 5px 0 0;width:1000px;position:relative" id="canvas-container">
         <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
     </div>
-    <div id="pic" style="width:500px;height:250px;background-color:#ccc"></div>
-    <div class="biaoji" style="display:none;">标记位置：125，125</div>
+    <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:5;display:none">
+        
+    </div>
+    <div style="margin-left:1010px;margin-top:-500px">
+        <div>
+            <input id="search-title" type="text">
+            <button onclick="searchMarkAndLocate()">搜索</button>
+        </div>
+        <div>
+            <label>标注标题:</label>
+            <span class="show-mark-title"></span>
+        </div>
+        <div>
+            <label>标注内容：</label>
+            <span class="show-mark-content"></span>
+        </div>
+    </div>
+    <div class="setTitle" style="margin-left:1010px;margin-top:50px">
+        <label style="display:block">
+            <label>标题：</label>
+            <input type="text" id="markTitle"></input>
+        </label>
+        <label style="display:block">
+            <label>内容：</label>
+            <input type="text" id="markContent"></input>
+        </label>
+        <button style="width:100px;margin-top:10px" onclick="submitMarkPoint()" disabled>提交</button>        
+    </div>
 </body>
 <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
 <script>
@@ -36,11 +69,23 @@
         （3）每个图片页面上都有个检索框，可检索本页图片上的标注文字，检索后可快速定位到大图中打点的位置；
         （4）图片仅能浏览，不能进行复制、下载。*/
 
-    var url = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=e897862c-ec01-434f-afb5-7ac0356d1012";
-    url = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=99d426ad-3055-4b6e-a677-ef2a776865f1";
+        /*
+        messageController/delMsgImgMarkInfo.do 
 
+        删除标记
+        参数：
+        markid //标记信息id,必填
+        返回：
+        成功 {"success":true,"error":"成功信息"}
+        失败 {"success":false,"error":"错误信息"}*/
 
-    url="http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do?msgId=4043b6bc-6629-4f56-85eb-7bae1abadba9"
+    var msgId = "4043b6bc-6629-4f56-85eb-7bae1abadba9";
+    var msgId = "4f8d7be9-47a2-434b-8ff5-a305a013fa9c";
+    var getPhotoMsgurl = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgCutInfo.do";
+    var getMarkInfoMsg = "http://61.155.85.77:6601/TrueCMS/messageController/getMsgImgMarkInfo.do";
+    var mergeMarkInfo = "http://61.155.85.77:6601/TrueCMS/messageController/mergeMsgImgMarkInfo.do";
+    var website = "http://61.155.85.77:6601/";
+
     var canvas = document.getElementById('canvas');
     var context = canvas.getContext('2d');
 
@@ -65,15 +110,19 @@
     var picScaleDirName;
     var picRootDir;
     var markDataArr;
-    var website = "http://61.155.85.77:6601/";
+    var picPath;
+    
 
     var picInfoArr=[];
 
     $.ajax({
         type: 'get',
         dataType: 'jsonp',
-        url: url,
+        url: getPhotoMsgurl,
         async: true,
+        data:{
+            msgId: msgId
+        },
         success: function (data) {
             if (data.success) {
                 var picInfo = data.picInfo;
@@ -83,62 +132,102 @@
                 picSuffix = picInfo.picSuffix;
                 picResolutionArr = JSON.parse(picInfo.picResolutionArr);
                 picRootDir = picInfo.picRootDirName;
-                console.log(picResolutionArr,picNamesArr)
+                picPath = picInfo.picPath;
+                console.log(picResolutionArr,picNamesArr);
+
+                var smallPicPath = website +picPath;
+
+                var img = '<img src="'+smallPicPath+'" style="width:300px">'
+                $('#pic').append(img);
 
                 initParameters();
+                generateScaleTitle();
                 drawCanvas();
 
                 $.ajax({
                     type:'get',
-                    url:website+'TrueCMS/messageController/getMsgImgMarkInfo.do',
+                    url:getMarkInfoMsg,
                     dataType:'jsonp',
                     async:true,
                     data:{
-                        msgId: "99d426ad-3055-4b6e-a677-ef2a776865f1"
+                        msgId: msgId
                     },
                     success:function(data){
                         markDataArr = data;
                         showMarks(data);
-                        console.log(data);
                     }
                 })
             }
         }
     })
 
-    // initParameters();
-    // drawCanvas();
-    // canvas.onmousewheel = onmousewheel;
+    function onShowSmallImgChange(e){
+        if(event.target && event.target.checked){
+            $('#pic').show();
+        } else {
+            $('#pic').hide();
+        }
+    }
+
+    function generateScaleTitle(){
+        var html = '';
+        for(var i = 0;i<picScaleDirName.length;i++){
+            html+='<button style="margin-left:5px;margin-right:5px" onclick="onScaleBtnClicked()">'+picScaleDirName[i]+'</button>';
+        }
+
+        $('.scale-btn-con').append(html);
+    }
+
+    function onScaleBtnClicked(){
+        scale = Number(event.target.innerHTML);
+        canvas.onmousewheel = null;
+        initParameters();
+        drawCanvas();
+        showMarks();
+    }
+
+    function searchMarkAndLocate(){
+        var arr = markDataArr.imgMarkList;
+        console.log(arr);
+        var title = $('#search-title').val();
+        for(var i=0;i<arr.length;i++){
+            console.log(arr[i].markTitle);
+            if(arr[i].markTitle == title){
+                $('.show-mark-title').append(arr[i].markx);
+                $('.show-mark-content').append(arr[i].marky);
+                break;
+            }
+        }
+    }
 
     function onAddIconClick(){
         addIcon = true;
     }
 
-    function addIconFunc(posX,posY){
-        var originX = posX - startX - canvasShiftX
-        var originY = posY - startY - canvasShiftY;
-
-        var url = "TrueCMS/messageController/mergeMsgImgMarkInfo.do";
-        console.log(originX,originY);
-        console.log(Number((originX/theWholeWidth).toFixed(8)),Number((originY/theWholeHeight).toFixed(8)));
+    function submitMarkPoint(){
+        var title = document.getElementById('markTitle').value;
+        var content = document.getElementById('markContent').value;
+        $('.setTitle button').attr('disabled','disabled');
         $.ajax({
             type:'post',
             dataType:'jsonp',
-            url:website+ url,
+            url:mergeMarkInfo,
             async:'true',
             data:{
-                msgId:"99d426ad-3055-4b6e-a677-ef2a776865f1",
-                markx:Number((originX/theWholeWidth).toFixed(8)),
-                marky:Number((originY/theWholeHeight).toFixed(8)),
+                msgId:msgId,
+                markx:Number((markPointX/theWholeWidth).toFixed(8)),
+                marky:Number((markPointY/theWholeHeight).toFixed(8)),
+                marktitle:title,
+                markps:content
             },
             success:function(data){
                 $.ajax({
                     type:'get',
-                    url:website+'TrueCMS/messageController/getMsgImgMarkInfo.do',
+                    url:getMarkInfoMsg,
                     dataType:'jsonp',
                     async:true,
                     data:{
-                       msgId: "99d426ad-3055-4b6e-a677-ef2a776865f1"
+                       msgId: msgId
                     },
                     success:function(data){
                         markDataArr=data;
@@ -150,14 +239,25 @@
         })        
     }
 
+    var markPointX,markPointY;
+
+    function addIconFunc(posX,posY){
+        var originX = posX - startX - canvasShiftX
+        var originY = posY - startY - canvasShiftY;
+
+        var container = document.getElementsByClassName('setTitle');
+        container[0].style.visibility = '';
+        markPointX = originX;
+        markPointY = originY;
+
+        $('.setTitle button').removeAttr('disabled');
+    }
+
     function showMarks(data){
         if(markDataArr){
-            var points = document.getElementsByClassName('markPoint');
-            for(var i=0;i<points.length;i++){
-                points[i].remove();
-            }
-            var markArr = markDataArr.imgMarkList;
+            $('.markPoint').remove();
             var container = document.getElementById('canvas-container');
+            var markArr = markDataArr.imgMarkList;
 
             var innerHtml = '';
             for(var i=0;i<markArr.length;i++){
@@ -168,7 +268,7 @@
                 if(x < 0 || x > canvasWidth || y < 0 || y>canvasHeight){
                     continue;
                 }
-                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px"></div>');
+                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].marktitle+'"></div>');
             }
             $(container).append(innerHtml);
         }

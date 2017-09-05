@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+<title>南通公安局警银管理系统</title>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <meta name="viewport" content="width=device-width,init-scale=1,user-scalable=0" />
+    <link type="text/css" rel="stylesheet" href="css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <link rel="stylesheet" type="text/css" href="css/font-awesome-4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="js/laydate/need/laydate.css" />
+</head>
+<body>
+	<div class="container" id="content">
+		<div class="bank-box" id="content-1">
+			<h1 class="bank-title">假币面额统计</h1>
+			<div class="bank-chart fl">
+				<div class="select-time">
+					从
+					<input id="start1" class="laydate-icon date-icon startTime"  placeholder="开始日期">
+					至
+					<input id="end1" class="laydate-icon date-icon endTime"  placeholder="结束日期">
+					<span class="fa fa-search search-box" id="selectChart1">检索</span>
+				</div>
+				<div class="chart-box" id="chart-1">
+					
+				</div>
+			</div>
+		</div>
+		<div class="bank-box" id="content-2">
+			<div class="bank-chart fl bank-nopadding bank-chart-2">
+				<h1 class="bank-title">假币面额统计</h1>
+					<div class="bank-main">
+						<div class="select-time show-select-time">
+							<div class="">
+								机构名称:
+								<select class="select-box" id="bankList">
+									<option>请选择</option>
+								</select>
+								<span class="numSelect">
+									数据范围:
+									<select class="select-box" id="fwList">
+										<option value="">请选择</option>
+										<option value="">全辖</option>
+										<option value="226000">本行</option>
+									</select>
+								</span>
+							</div>
+							<div class="timeSelect">
+								从
+								<input id="start2" class="laydate-icon date-icon startTime" placeholder="开始日期">
+								至
+								<input id="end2" class="laydate-icon date-icon endTime" placeholder="结束日期">
+								<span class="fa fa-search search-box" id="selectChart2">检索</span>
+							</div>
+							
+						</div>
+						<div class="chart-box" id="chart-2">
+							
+						</div>
+					</div>
+			</div>
+			<div class="bank-right-chart fl">
+				<h1 class="bank-title">银行分布情况</h1>
+				<div class="bank-main">
+					<div class="select-time position-center show-select-time">
+						从
+						<input id="start3" class="laydate-icon date-icon startTime"  placeholder="开始日期">
+						至
+						<input id="end3" class="laydate-icon date-icon endTime"  placeholder="结束日期">
+						<span class="fa fa-search search-box" id="selectChart3">检索</span>
+					</div>
+					<div class="chart-box" id="chart-3">
+						
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="bank-box" id="content-3">
+			<h1 class="bank-title">地区分布情况</h1>
+			<div class="bank-main">
+				<div class="select-time position-left">
+					从
+					<input id="start4" class="laydate-icon date-icon startTime"  placeholder="开始日期">
+					至
+					<input id="end4" class="laydate-icon date-icon endTime"  placeholder="结束日期">
+					<span class="fa fa-search search-box" id="selectChart4">检索</span>
+				</div>
+			</div>
+			<div class="bank-chart bottom-chart-1 fl bank-nopadding">
+				<div class="chart-box" id="chart-4">
+					
+				</div>
+			</div>
+			<div class="bank-right-chart bottom-chart-3 fl">
+				<div class="chart-box" id="chart-5">
+					
+				</div>
+			</div>
+			<div class="bank-right-chart bottom-chart-2 fl">
+				<div class="chart-box" id="chart-6">
+					
+				</div>
+			</div>
+		</div>
+		<div class="bank-box" id="content-4">
+			<h1 class="bank-title">网点前十排名（年初至今）</h1>
+			<div class="bank-main">
+				<div class="select-time position-left">
+				从
+					<input id="start5" class="laydate-icon date-icon startTime"  placeholder="开始日期">
+					至
+					<input id="end5" class="laydate-icon date-icon endTime"  placeholder="结束日期">
+					<span class="fa fa-search search-box" id="selectChart5">检索</span>
+				</div>
+			</div>
+			<div class="table-box">
+				<table id="list-table">
+					<thead>
+						<tr>
+							<td width="20%">排名</td>
+							<td width="60%">网点名称</td>
+							<td width="20%">收缴张数</td>
+						</tr>
+					</thead>
+					<tbody>
+						
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</body>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/echarts.js"></script>
+<script type="text/javascript" src="js/laydate/laydate.js"></script>
+<script type="text/javascript">
+	var URL = 'http://61.155.82.9:18080/TrueCMS/policeBankController/';
+	var locationUrl = window.location.search;
+  	var bankCode = locationUrl.split('=')[1];
+    function getJSONData(url,callback){
+      $.ajax({
+          type: "POST",
+          contentType: "application/x-www-form-urlencoded; charset=utf-8",
+          dataType: "jsonp",
+          url: url,
+          jsonp: 'callback',
+          success: function (json) {
+              callback(json)
+          },
+          timeout: 90*1000,
+          error: function (XMLHttpRequest, textStatus, errorThrown) {
+              console.error(url,textStatus+": "+errorThrown);
+          }
+      });
+  	}
+
+  	$(function(){
+  		if(/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+		    $('.select-time').hide();
+		    $('.show-select-time').show();
+		} else {
+		    $('.select-time').show();
+		}
+
+		var dt = new Date();
+		var monthn = dt.getMonth()+1;
+		var yearn  = dt.getFullYear();
+			monthn =(monthn<10 ? "0"+monthn:monthn); 
+		var lastTime = new Date(dt.setMonth( dt.getMonth()-12 ));
+		//var lastTime = dt.toLocaleString();
+		var monthL = lastTime.getMonth()+1;
+        var yearL =  lastTime.getFullYear();
+            monthL =(monthL<10 ? "0"+monthL:monthL); 
+		var lastDate = yearL + '-' +monthL;
+        console.log(lastDate);
+		var nowDate = yearn + '-'+ monthn;
+        console.log(nowDate);
+
+  		var start = {
+		  elem: '#content .startTime',
+		  format: 'YYYY-MM',
+		  isdate: true,
+		  istoday: true,
+		  start: '2016-01-01'
+		};
+		var end = {
+		  elem: '#content .endTime',
+		  format: 'YYYY-MM',
+		  isdate: true,
+		  istoday: true
+		};
+		laydate.skin('danlan');
+		laydate(start);
+		laydate(end);
+		
+        $('.startTime').val(laydate.now(-365, 'YYYY-MM'));
+        $('.endTime').val(laydate.now(0, 'YYYY-MM'));
+		$('#start5').val(yearn+'-01');
+        var tableLastYear = yearn+'-01';
+
+		// if(/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+		//    content2(lastDate,nowDate);
+		//    content3(lastDate,nowDate);
+		//    content4(lastDate,nowDate);
+		//    content5(lastDate,nowDate);
+		// } else {
+		//     content2('','');
+		//     content3('','');
+		//     content4('','');
+		//     content5('','');
+		// }
+
+		content2(lastDate,nowDate);
+	    content3(lastDate,nowDate);
+	    content4(lastDate,nowDate);
+	    content5(tableLastYear,nowDate);
+
+		function content2(statTime,endTime){
+			getJSONData(URL+'getSjmetjInfo.do?bankCode='+bankCode+'&tjstarttime='+statTime+'&tjendtime='+endTime,function(data,err){
+			// console.log(data);
+            console.log(err);
+				var xData = [], numData = [], moneyData = [];
+				if(data.tjinfo){
+					$.each(data.tjinfo,function(i,value){
+						xData.push(value.jbme+'元');
+						numData.push(value.metj);
+						moneyData.push(value.jbze);
+					});
+					if(data.type == 1){
+						$('#content-1').hide();
+						showChart1(xData,numData,moneyData);
+						showChart2(xData,numData,moneyData);
+					}else if(data.type == 2){
+						$('#content-1').hide();
+						$('#content-3').hide();
+						$('.numSelect').hide();
+						showChart2(xData,numData,moneyData);
+					}else if(data.type == 3 || data.type == 4){
+						$('#content-2').hide();
+						$('#content-3').hide();
+						showChart1(xData,numData,moneyData);
+					}
+				}
+			});
+		}
+		
+
+		//银行列表
+		getJSONData(URL+'getBankInfoList.do',function(data){
+			// console.log(data);
+			if(data.banklist){
+				$.each(data.banklist,function(i,value){
+					$('#bankList').append('<option value="'+value.sjlbdm+'">'+value.sjlbmc+'</option>');
+				});
+			}
+		});
+
+		function content3(statTime,endTime){
+			//银行分布统计 （饼图）
+			getJSONData(URL+'getYhfbtjInfo.do?bankCode='+bankCode+'&fbstarttime='+statTime+'&fbendtime='+endTime,function(data){
+				// console.log(data);
+				var yData = [];
+				if(data.fbqkinfo){
+					$.each(data.fbqkinfo,function(i,value){
+						var infoData = {}
+						infoData.name = value.adname;
+						infoData.value = value.zjje;
+						// console.log(infoData);
+						yData.push(infoData);
+					});
+					showChart3(yData);
+				}
+			});
+		}
+		
+		function content4(statTime,endTime){
+			//地区分布情况 （地图）
+			getJSONData(URL+'getDqtjInfo.do?bankCode='+bankCode+'&fxtarttime='+statTime+'&fxendtime='+endTime,function(data){
+				// console.log(data);
+				var mapData = [], color = ['#ea9494','#c6e0c8','#c8d0db','#62d0ad','#b5eaef','#f2d76c','#ff3c00'],xData = [],yData = [],numData = [];
+				if(data.dqtjinfo){
+					$.each(data.dqtjinfo,function(i,value){
+						var object = {
+							name: '',
+							itemStyle:{
+								normal: {
+									areaColor: ''
+								}
+							},
+							value: ''
+						};
+						object.name = value.dqmc;
+						// object.itemStyle.normal.areaColor = color[i];
+						object.value = value.value;
+						mapData.push(object);
+						xData.push(value.dqmc);
+						yData.push(value.zjje);
+						numData.push(value.value+'张');
+					});
+					xData = xData.reverse();
+					yData = yData.reverse();
+					numData = numData.reverse();
+					// console.log(xData);
+					showChart4(mapData);
+					showChart6(xData,yData,numData);
+				}
+			});
+		}
+		
+		
+
+		//新增网点前十排名列表
+		function content5(statTime,endTime){
+			// console.log(statTime,endTime);
+			getJSONData(URL+'getWdtjInfo.do.do?bankCode='+bankCode+'&wdtjstarttime='+statTime+'&wdtjendtime='+endTime,function(data){
+				if(data.wdtjinfo){
+					$.each(data.wdtjinfo,function(index,value){
+						var html = '<tr><td><span class="number">'+(index+1)+'</span></td><td>'+value.name+'</td><td>'+value.value+'</td></tr>';
+						$('#list-table tbody').append(html);
+					});
+				}else{
+					var html = '<tr><td rowspan=1 colspan=3>暂无数据</td></tr>';
+					$('#list-table tbody').append(html);
+				}
+			});
+		}
+		
+
+		$('#selectChart1').click(function(){
+			var startTime = $(this).siblings('#start1').val();
+			var endTime = $(this).siblings('#end1').val();
+			// console.log(startTime,endTime);
+			// startTime = startTime.split('-')[0]+'-'+startTime.split('-')[1];
+			// endTime = endTime.split('-')[0]+'-'+endTime.split('-')[1];
+
+			if(startTime && endTime){
+				getJSONData(URL+'getSjmetjInfo.do?bankCode='+bankCode+'&tjstarttime='+startTime+'&tjendtime='+endTime,function(data){
+					// console.log(data);
+					var xData = [], numData = [], moneyData = [];
+					if(data.tjinfo){
+						$.each(data.tjinfo,function(i,value){
+							xData.push(value.jbme+'元');
+							numData.push(value.metj);
+							moneyData.push(value.jbze);
+						});
+						showChart1(xData,numData,moneyData);
+					}
+				});
+			}
+		});
+
+		$('#selectChart2').click(function(){
+			var startTime = $(this).siblings('#start2').val();
+			var endTime = $(this).siblings('#end2').val();
+			// startTime = startTime.split('-')[0]+'-'+startTime.split('-')[1];
+			// endTime = endTime.split('-')[0]+'-'+endTime.split('-')[1];
+			var tjjgmc = $('#bankList option:selected').text();
+			if(tjjgmc == '请选择'){
+				tjjgmc = '';
+			}
+			var tjsjfw = $('#fwList option:selected').val();
+			getJSONData(URL+'getSjmetjInfo.do?bankCode='+bankCode+'&tjstarttime='+startTime+'&tjendtime='+endTime+'&tjjgmc='+tjjgmc+'&tjsjfw='+tjsjfw,function(data){
+					var xData = [], numData = [], moneyData = [];
+					if(data.tjinfo){
+						$.each(data.tjinfo,function(i,value){
+							xData.push(value.jbme+'元');
+							numData.push(value.metj);
+							moneyData.push(value.jbze);
+						});
+						showChart2(xData,numData,moneyData);
+					}
+				});
+		});
+
+		$('#selectChart3').click(function(){
+			var startTime = $(this).siblings('#start3').val();
+			var endTime = $(this).siblings('#end3').val();
+			getJSONData(URL+'getYhfbtjInfo.do?bankCode='+bankCode+'&fbstarttime='+startTime+'&fbendtime='+endTime,function(data){
+				// console.log(data);
+				var yData = [];
+				var yhData = data.fbqkinfo;
+				if(yhData.length == 0){
+					$('#chart-3').html('暂无数据');
+				}else{
+					$.each(data.fbqkinfo,function(i,value){
+						var infoData = {}
+						infoData.name = value.adname;
+						infoData.value = value.zjje;
+						// console.log(infoData);
+						yData.push(infoData);
+					});
+					showChart3(yData);
+				}
+			});
+		});
+
+		$('#selectChart4').click(function(){
+			var startTime = $(this).siblings('#start4').val();
+			var endTime = $(this).siblings('#end4').val();
+			if(startTime && endTime){
+				getJSONData(URL+'getDqtjInfo.do?bankCode='+bankCode+'&fxtarttime='+startTime+'&fxendtime='+endTime,function(data){
+					// console.log(data);
+					var mapData = [], color = ['#ea9494','#c6e0c8','#c8d0db','#62d0ad','#b5eaef','#f2d76c','#ff3c00'],xData = [],yData = [],numData = [];
+					if(data.dqtjinfo){
+						$.each(data.dqtjinfo,function(i,value){
+							var object = {
+								name: '',
+								itemStyle:{
+									normal: {
+										areaColor: ''
+									}
+								},
+								value: ''
+							};
+							object.name = value.dqmc;
+							// object.itemStyle.normal.areaColor = color[i];
+							object.value = value.value;
+							mapData.push(object);
+							xData.push(value.dqmc);
+							yData.push(value.zjje);
+							numData.push(value.value+'张');
+						});
+						xData = xData.reverse();
+						yData = yData.reverse();
+						numData = numData.reverse();
+						// console.log(xData);
+						showChart4(mapData);
+						showChart6(xData,yData,numData);
+					}
+				});
+			}
+		});
+
+		$('#selectChart5').click(function(){
+			var startTime = $(this).siblings('#start5').val();
+			var endTime = $(this).siblings('#end5').val();
+			getJSONData(URL+'getWdtjInfo.do.do?bankCode='+bankCode+'&wdtjstarttime='+startTime+'&wdtjendtime='+endTime,function(data){
+				$('#list-table tbody').html('');
+				$.each(data.wdtjinfo,function(index,value){
+					var html = '<tr><td><span class="number">'+(index+1)+'</span></td><td>'+value.name+'</td><td>'+value.value+'</td></tr>';
+					$('#list-table tbody').append(html);
+				});
+			});
+		});
+
+		function showChart1(xData,numData,moneyData){
+			var chart1 = echarts.init(document.getElementById('chart-1'));
+			var chart1option = {
+		        color: ['#5ebdff','#e77c56'],
+		        tooltip: {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            crossStyle: {
+			                color: '#999'
+			            }
+			        }
+			    },
+		        legend: {
+		        	data: ['收缴金额','收缴张数']
+		        },
+		        grid: {
+		        	top: '10%',
+		            left: '2%',
+		            right: '2%',
+		            bottom: '5%',
+		            containLabel: true
+		        },
+		        xAxis : [
+		            {
+		                type : 'category',
+		                data : xData,
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitLine: {
+		                    show: true,
+		                    lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width:1,
+		                    }
+		                },
+		                axisLabel: {
+		                	interval:0,
+		                	textStyle : {
+		                		color : '#666'
+		                	}
+		                }
+		            }
+		        ],
+		        yAxis: [
+			        {
+			            type: 'value',
+			            name: '元',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                }
+			        },
+			        {
+			            type: 'value',
+			            name: '张数',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                }
+			        }
+			    ],
+			    series: [
+			        {
+			            name:'收缴金额',
+			            type:'bar',
+			            barMaxWidth: 30,
+			            data: moneyData
+			        },
+			        {
+			            name:'收缴张数',
+			            type:'line',
+			            yAxisIndex: 1,
+			            data: numData
+			        }
+			    ]
+		    };
+		    chart1.setOption(chart1option);
+		}
+
+		function showChart2(xData,numData,moneyData){
+			var chart2 = echarts.init(document.getElementById('chart-2'));
+			var chart2option = {
+		        color: ['#5ebdff','#e77c56'],
+		        tooltip: {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            crossStyle: {
+			                color: '#999'
+			            }
+			        }
+			    },
+		        legend: {
+		        	data: ['收缴金额','收缴张数']
+		        },
+		        grid: {
+		        	top: '10%',
+		            left: '2%',
+		            right: '2%',
+		            bottom: '5%',
+		            containLabel: true
+		        },
+		        xAxis : [
+		            {
+		                type : 'category',
+		                data : xData,
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitLine: {
+		                    show: true,
+		                    lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width:1,
+		                    }
+		                },
+		                axisLabel: {
+		                	interval:0,
+		                	textStyle : {
+		                		color : '#666'
+		                	}
+		                }
+		            }
+		        ],
+		        yAxis: [
+			        {
+			            type: 'value',
+			            name: '元',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                }
+			        },
+			        {
+			            type: 'value',
+			            name: '张数',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                }
+			        }
+			    ],
+			    series: [
+			        {
+			            name:'收缴金额',
+			            type:'bar',
+			            barMaxWidth: 30,
+			            data: moneyData
+			        },
+			        {
+			            name:'收缴张数',
+			            type:'line',
+			            yAxisIndex: 1,
+			            data: numData
+			        }
+			    ]
+		    };
+		    chart2.setOption(chart2option);
+		}
+		
+		
+		function showChart3(yData){
+			var chart3 = echarts.init(document.getElementById('chart-3'));
+		    var chart3option = {
+		    	color: ['#e77c56','#ffc364','#67cdea','#48abdd','#e35855','#ff8c64','#98bedf','#e27aae','#c97ff3','#6bcc6b','#c5e18a'],
+			    tooltip: {
+			        trigger: 'item',
+			        formatter: "{a} <br/>{b} : {c}元 ({d}%)",
+			        position: ['5%', '50%']
+			    },
+			    calculable: true,
+			    series: [
+				    {
+				        name: '收缴金额',
+				        type: 'pie',
+				        radius: [20, 80],
+				        center: ['50%', '50%'],
+				        roseType: 'area',
+				        data: yData,
+				        labelLine: {
+			                normal: {
+			                    smooth: 0.2,
+			                     length: 10,
+                				length2: 10
+			                }                         
+			            }
+				    }
+				]
+			};
+			chart3.setOption(chart3option);
+		}
+	    
+		function showChart4(mapData,startTime,endTime){
+			if(startTime == undefined || endTime == undefined){
+				startTime = '';
+				endTime = '';
+			}
+			$.getJSON('js/nantong.json', function (data) {
+		        echarts.registerMap('nantong', data);
+		        var mapChart = echarts.init(document.getElementById('chart-4'));
+			    mapChart.setOption({
+			    	color: ['#5ebdff'],
+			    	tooltip: {
+			            trigger: 'item',
+			            formatter: '{b}'
+			        },
+			        dataRange: {
+				        right: '2%',
+				        top: '5%',
+				        splitList: [
+				            {start: 3000, color: '#ff3c00'},
+				            {start: 2000, end: 3000, color: '#ff7800'},
+				            {start: 1000, end: 2000, color: '#f1d76c'},
+				            {end: 1000, color: '#91e591'}
+				        ]
+				        
+				    },
+			        series: [
+			        	{
+				            type: 'map',
+				            map: 'nantong',
+				            left: '5%',
+				            top: '5%',
+            				right: '5%',
+            				bottom:'5%',
+				            itemStyle:{
+				                normal:{
+				                	label:{
+				                		show:true,
+				                		textStyle: {
+										  color: "#fff"
+										}
+				                	}
+				                },
+				                emphasis:{label:{show:true}}
+				            },
+				            data: mapData
+				        }
+				    ]
+			    });
+
+			    mapChart.on('click',function(params){
+			    	var name = encodeURI(params.name,"UTF-8");
+			    	// console.log(name);
+			    	//银行分布统计 （饼图）
+					getJSONData(URL+'getYhfbtjInfo.do?bankCode='+bankCode+'&fbdq='+name+'&fbstarttime='+startTime+'&fbendtime='+endTime,function(data){
+						// console.log(data);
+						var yData = [];
+						if(data.fbqkinfo){
+							$.each(data.fbqkinfo,function(i,value){
+								var infoData = {}
+								infoData.name = value.adname;
+								infoData.value = value.zjje;
+								// console.log(infoData);
+								yData.push(infoData);
+							});
+							showChart5(yData);
+						}
+					});
+			    });
+	   	 	});
+		}
+
+		function showChart5(yData){
+			$('#chart-5').show();
+			if(yData.length>0){
+				var chart5 = echarts.init(document.getElementById('chart-5'));
+			    var chart5option = {
+			    	color: ['#e77c56','#ffc364','#67cdea','#48abdd','#e35855','#ff8c64','#98bedf','#e27aae','#c97ff3','#6bcc6b','#c5e18a'],
+				    tooltip: {
+				        trigger: 'item',
+				        formatter: "{a} <br/>{b} : {c}元 ({d}%)",
+				        position: ['5%', '50%']
+				    },
+				    calculable: true,
+				    series: [
+					    {
+					        name: '收缴金额',
+					        type: 'pie',
+					        radius: [20, 80],
+					        center: ['50%', '50%'],
+					        roseType: 'area',
+					        data: yData,
+					        labelLine: {
+				                normal: {
+				                    smooth: 0.2,
+				                    length: 10,
+                    				length2: 10
+				                }
+				            }
+					    }
+					]
+				};
+				chart5.setOption(chart5option);
+			}else{
+				var html = '<p class="noData">暂无数据</p>';
+				$('#chart-5').html(html);
+			}
+		}
+
+		function showChart6(xData,yData,numData){
+			var chart6 = echarts.init(document.getElementById('chart-6'));
+			chart6.setOption({
+				tooltip: {
+		            trigger: 'item',
+		            formatter: '{b} :{c}元'
+		        },
+		        grid: {
+		        	top: '5%',
+		        	left:'5%',
+			        right: '5%',
+			        bottom: '5%',
+			        containLabel: true
+			    },
+			    xAxis: {
+			        type: 'value',
+			        show: false
+			    },
+			    yAxis: [
+			        {
+			            type: 'category',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                },
+			            data: xData
+			        },
+			        {
+			            type: 'category',
+			            nameTextStyle:{
+		                    color: '#333'
+		                },
+		                axisLine: {
+		                    lineStyle:{
+		                        color:'#e8e8e8',
+		                        width: 1,
+		                    }
+		                },
+		                axisLabel: {
+		                    margin: 5,
+		                    textStyle : {
+		                		color : '#666'
+		                	}
+		                },
+		                axisTick: {
+		                    show: false,
+		                    alignWithLabel: true
+		                },
+		                splitArea : {
+		                	show : true,
+		                	areaStyle:{
+		                		color: '#f9f9f9'
+		                	}
+		                },
+		                splitLine:{
+		                	show: true,
+		                	lineStyle :{
+		                		color : '#f2f2f2'
+		                	}
+		                },
+			            data: numData
+			        }
+			    ],
+			    series: [{
+		            name:'收缴金额',
+		            right:0,
+		            type:'bar',
+		            barMaxWidth: 30,
+		            data: yData,
+		            itemStyle: {
+		            	normal: {
+		            		color: function(params) {
+		                        // build a color map as your need.
+		                        // var colorList = ['#ea9494','#c6e0c8','#c8d0db','#62d0ad','#b5eaef','#f2d76c','#ff3c00'];
+		                        var colorList = ['#ff3c00','#f2d76c','#b5eaef','#62d0ad','#c8d0db','#c6e0c8','#ea9494'];
+		                        return colorList[params.dataIndex]
+		                    }
+		            	}
+		            },
+		            label: {
+		                normal: {
+		                    show: true,
+		                    position: 'top',
+		                    offset: [60,25],
+		                    textStyle: {
+		                    	color: '#035aaa'
+		                    },
+		                    formatter: function(params){
+		                    	return params.value+'元';
+		                    }
+		                }
+		            }
+		        }]
+			});
+		}
+
+
+		
+  	});
+</script>
+</html>

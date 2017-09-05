@@ -14,8 +14,12 @@
             z-index: 2;
         }
 
-        .slideBar{
-            
+        .slide-block{
+            width: 100px;
+            height: 50px;
+            background: rgba(255,255,255,0.7);
+            position: absolute;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -31,7 +35,7 @@
         <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
     </div>
     <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:5;display:none">
-        
+        <div class="slide-block"></div>
     </div>
     <div style="margin-left:1010px;margin-top:-500px">
         <div>
@@ -115,6 +119,55 @@
 
     var picInfoArr=[];
 
+
+    
+    $('.slide-block').bind('mousedown',function(e1){
+        var paX = $('#pic')[0].offsetLeft;
+        var paY = $('#pic')[0].offsetTop;
+        var paW = $('#pic')[0].offsetWidth;
+        var paH = $('#pic')[0].offsetHeight;
+        $('#pic').bind('mousemove',function(e){
+            console.log('onmousemove');
+            var x = e.originalEvent.x-15;
+            var y = e.originalEvent.y-60;
+
+            var top = y-25 > 0 ? y-25 : 0;
+            top = top + 50 < paH ? top : paH - 50;
+            top = top < 0 ? 0 : top;
+
+            var left = x - 50 > 0 ? x - 50 : 0;
+            left = left + 100 < paW ? left : paW - 100;
+            left = left < 0 ? 0:left;
+            $('.slide-block').css({'top':top+'px','left':left+'px'});
+
+            var opX = theWholeWidth * 　(left*0.5 / paW);
+            var opY = theWholeHeight * (top*0.5 / paH);
+            canvasShiftX = canvasHeight / 2 - opX;
+            canvasShiftY = canvasHeight / 2 - opY;
+
+            if (Math.abs(canvasShiftX) > xShiftLength) {
+                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+            }
+
+            if (Math.abs(canvasShiftY) > yShiftLength) {
+                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+            }
+            drawCanvas();
+            showMarks();
+
+        });
+        $('.slide-block').bind('mouseup',function(){
+            $('.slide-block').unbind('mouseup');
+            $('#pic').unbind('mousemove');
+            $('#pic').unbind('mouseleave');
+        });
+        $('#pic').bind('mouseleave',function(){
+            $('.slide-block').unbind('mouseup');
+            $('#pic').unbind('mousemove');
+            $('#pic').unbind('mouseleave');
+        })
+    })
+
     $.ajax({
         type: 'get',
         dataType: 'jsonp',
@@ -195,6 +248,21 @@
             if(arr[i].markTitle == title){
                 $('.show-mark-title').append(arr[i].markx);
                 $('.show-mark-content').append(arr[i].marky);
+
+                var opX = theWholeWidth * 　Number(arr[i].markx);
+                var opY = theWholeHeight * Number(arr[i].marky);
+                canvasShiftX = canvasWidth / 2 - opX - startX;
+                canvasShiftY = canvasHeight / 2 - opY - startY;
+
+                if (Math.abs(canvasShiftX) > xShiftLength) {
+                    canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+                }
+
+                if (Math.abs(canvasShiftY) > yShiftLength) {
+                    canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+                }
+                drawCanvas();
+                showMarks();
                 break;
             }
         }
@@ -268,7 +336,7 @@
                 if(x < 0 || x > canvasWidth || y < 0 || y>canvasHeight){
                     continue;
                 }
-                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].marktitle+'"></div>');
+                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].markTitle+'"></div>');
             }
             $(container).append(innerHtml);
         }
@@ -319,7 +387,7 @@
         var opY = theWholeHeight * (offsetY / height);
 
         canvasShiftX = theWholeWidth / 2 - opX;
-        canvasShiftY = canvasHeight / 2 - opY;
+        canvasShiftY = theWholeHeight / 2 - opY;
 
         if (Math.abs(canvasShiftX) > xShiftLength) {
             canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;

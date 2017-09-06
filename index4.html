@@ -263,6 +263,7 @@
     var markPointX,markPointY;
 
     function addIconFunc(posX,posY){
+        var container1 = document.getElementById('canvas-container');
         var originX = posX - startX - canvasShiftX
         var originY = posY - startY - canvasShiftY;
 
@@ -272,6 +273,12 @@
         markPointY = originY;
 
         $('.setTitle button').removeAttr('disabled');
+
+
+        var innerHtml = '<div class="markPoint" style="top:'+posY+'px;left:'+posX+'px" title=""></div>';
+        $(container1).append(innerHtml);
+
+        console.log('append');
     }
 
 
@@ -383,6 +390,7 @@
 
     function windowToCanvas(canvas, x, y) {
         var bbox = canvas.getBoundingClientRect();
+        console.log(bbox);
         return {
             x: x - bbox.left - (bbox.width - canvas.width) / 2,
             y: y - bbox.top - (bbox.height - canvas.height) / 2
@@ -506,7 +514,6 @@
 
                 var nextCenterX = centerX * theWholeWidth / lastWholeWidth;
                 var nextCenterY = centerY * theWholeHeight / lastWholeHeight;
-                console.log('new:'+nextCenterX+','+nextCenterY)
 
                 canvasShiftX = canvasWidth/2 - startX - nextCenterX;
                 if(Math.abs(canvasShiftX) > xShiftLength){

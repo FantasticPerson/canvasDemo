@@ -183,6 +183,7 @@
     function onShowSmallImgChange(e){
         if(event.target && event.target.checked){
             $('#pic').show();
+            adjustSlideBlockPos();
         } else {
             $('#pic').hide();
         }

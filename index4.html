@@ -5,6 +5,11 @@
     <title></title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap-theme.min.css">
+    <script type="text/javascript" src="bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+    
     <style type="text/css">
         .markPoint{
             width: 10px;
@@ -12,14 +17,19 @@
             background: red;
             position: absolute;
             z-index: 2;
+            cursor: pointer;
         }
 
+
+        .markPointPicked{
+            background-color: green;
+        }
         .slide-block{
             /* width: 100px; */
             /* height: 50px; */
-            background: rgba(255,255,255,0.7);
+            background: rgba(255,255,255,0.7); 
             position: absolute;
-            cursor: pointer;
+            cursor: move;
         }
 
         *{
@@ -30,11 +40,11 @@
 </head>
 
 <body>
-    <div class="scale-btn-con" style="display:inline-block;width:150px"></div>
-    <button onclick="onAddIconClick()">标注</button>
-    <label>
-        <input type="checkbox" onchange="onShowSmallImgChange()">
-        <lable>缩略图</lable>
+    <div class="scale-btn-con" style="display:inline-block"></div>
+    <button onclick="onAddIconClick()" class="btn btn-success">标注</button>
+    <label style="vertical-align:middle">
+        <input type="checkbox" onchange="onShowSmallImgChange()" style="width:20px;height:20px">
+        <lable style="vertical-align:super">缩略图</lable>
     </label>
     <div style="margin:20px 5px 0 0;width:1000px;position:relative" id="canvas-container">
         <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
@@ -45,7 +55,7 @@
     <div style="margin-left:1010px;margin-top:-500px">
         <div>
             <input id="search-title" type="text">
-            <button onclick="searchMarkAndLocate()">搜索</button>
+            <button onclick="searchMarkAndLocate()" class="btn btn-success">搜索</button>
         </div>
         <div>
             <label>标注标题:</label>
@@ -65,10 +75,10 @@
             <label>内容：</label>
             <input type="text" id="markContent"></input>
         </label>
-        <button style="width:100px;margin-top:10px" onclick="submitMarkPoint()" disabled>提交</button>        
+        <button style="width:100px;margin-top:10px" onclick="submitMarkPoint()" disabled class="btn btn-success">提交</button>        
     </div>
 </body>
-<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+
 <script>
     /*前台网站预览该图片时实现：
         （1）如果该图片超过4M以上，将进行图片切割加载，切割加载后组成完整图片显示，支持图片放大缩小、
@@ -122,6 +132,8 @@
     var picPath;
     var picInfoArr=[];
     var slideBlockWidth,slideBlockHeight;
+    var tempPointTitle;
+    var tempTid;
 
     $.ajax({
         type: 'get',
@@ -179,7 +191,7 @@
     function generateScaleTitle(){
         var html = '';
         for(var i = 0;i<picScaleDirName.length;i++){
-            html+='<button style="margin-left:5px;margin-right:5px" onclick="onScaleBtnClicked()">'+picScaleDirName[i]+'</button>';
+            html+='<button class="btn btn-default" style="margin-left:5px;margin-right:5px;width:40px" onclick="onScaleBtnClicked()">'+picScaleDirName[i]+'</button>';
         }
 
         $('.scale-btn-con').append(html);
@@ -197,10 +209,21 @@
     function searchMarkAndLocate(){
         var arr = markDataArr.imgMarkList;
         var title = $('#search-title').val();
+        $('#search-title').val('');
         for(var i=0;i<arr.length;i++){
             if(arr[i].markTitle == title){
-                $('.show-mark-title').append(arr[i].markx);
-                $('.show-mark-content').append(arr[i].marky);
+
+                tempPointTitle = title;
+                tempTid = null;
+
+                var title = document.getElementsByClassName('show-mark-title')[0];
+                if(title){
+                    title.innerText = arr[i].markTitle;
+                }
+                var content = document.getElementsByClassName('show-mark-content')[0];
+                if(content){
+                    content.innerText = arr[i].markps;
+                }
 
                 var opX = theWholeWidth * 　Number(arr[i].markx);
                 var opY = theWholeHeight * Number(arr[i].marky);
@@ -216,6 +239,7 @@
                 }
                 drawCanvas();
                 showMarks();
+
                 break;
             }
         }
@@ -271,16 +295,36 @@
         container[0].style.visibility = '';
         markPointX = originX;
         markPointY = originY;
-
         $('.setTitle button').removeAttr('disabled');
 
-
-        var innerHtml = '<div class="markPoint" style="top:'+posY+'px;left:'+posX+'px" title=""></div>';
+        var innerHtml = '<div class="markPoint markPointPicked" style="top:'+posY+'px;left:'+posX+'px" title=""></div>';
         $(container1).append(innerHtml);
-
-        console.log('append');
     }
 
+    $("#canvas-container").on("click",".markPoint", function(e) {
+        console.log(e.currentTarget.getAttribute('tid'));
+        var tid = e.currentTarget.getAttribute('tid');
+        var arr = markDataArr.imgMarkList;
+        var title = e.currentTarget.title;
+        tempPointTitle = null;
+        tempTid = tid;
+        for(var i=0;i<arr.length;i++){
+            if(arr[i].id == tid){
+                var title = document.getElementsByClassName('show-mark-title')[0];
+                if(title){
+                    title.innerText = arr[i].markTitle;
+                }
+                var content = document.getElementsByClassName('show-mark-content')[0];
+                if(content){
+                    content.innerText = arr[i].markps;
+                }
+                drawCanvas();
+                showMarks();
+                break;
+            }
+        }
+        
+    });
 
     /* 显示所有标记点 */
     function showMarks(data){
@@ -298,7 +342,11 @@
                 if(x < 0 || x > canvasWidth || y < 0 || y>canvasHeight){
                     continue;
                 }
-                innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].markTitle+'"></div>');
+                if(tempPointTitle == markArr[i].markTitle || tempTid == markArr[i].id){
+                    innerHtml += ('<div class="markPoint markPointPicked" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].markTitle+'" tid="'+markArr[i].id+'"></div>');
+                } else {
+                    innerHtml += ('<div class="markPoint" style="top:'+y+'px;left:'+x+'px" title="'+markArr[i].markTitle+'" tid="'+markArr[i].id+'"></div>');
+                }
             }
             $(container).append(innerHtml);
         }
@@ -388,6 +436,7 @@
         })
     })
 
+    /*  坐标换算 */
     function windowToCanvas(canvas, x, y) {
         var bbox = canvas.getBoundingClientRect();
         console.log(bbox);
@@ -527,6 +576,7 @@
         }
     }
 
+    /* 调整 slideBlock 的位置 */
     function adjustSlideBlockPos(){
         var paW = $('#pic img')[0].offsetWidth;
         var paH = $('#pic img')[0].offsetHeight;
@@ -588,7 +638,7 @@
                     posIndexX: posIndexX,
                     posIndexY: posIndexY,
                     width:width,
-                    height:height
+                    height:height                                                                         
                 })
             }
             i++;

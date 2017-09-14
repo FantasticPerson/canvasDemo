@@ -4,11 +4,15 @@
 <head>
     <title></title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
     <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
     <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap-theme.min.css">
     <script type="text/javascript" src="bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="transform.js"></script>
+    <script type="text/javascript" src="alloy_finger.js"></script>
+    <script type="text/javascript" src="to.js"></script>
     
     <style type="text/css">
         .markPoint{
@@ -46,18 +50,18 @@
 
 <body>
     <div class="scale-btn-con" style="display:inline-block"></div>
-    <button onclick="onAddIconClick()" class="btn btn-success">标注</button>
+    <!-- <button onclick="onAddIconClick()" class="btn btn-success">标注</button>
     <label style="vertical-align:middle">
         <input type="checkbox" onchange="onShowSmallImgChange()" style="width:20px;height:20px">
         <lable style="vertical-align:super">缩略图</lable>
-    </label>
-    <div style="margin:20px 5px 0 0;width:1000px;position:relative" id="canvas-container">
+    </label> -->
+    <div style="width:1000px;position:relative" id="canvas-container">
         <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
     </div>
     <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:5;display:none">
         <div class="slide-block"></div>
     </div>
-    <div style="margin-left:1010px;margin-top:-500px">
+    <div>
         <div>
             <input id="search-title" type="text">
             <button onclick="searchMarkAndLocate()" class="btn btn-success">搜索</button>
@@ -71,21 +75,16 @@
             <span class="show-mark-content"></span>
         </div>
     </div>
-    <div class="setTitle" style="margin-left:1010px;margin-top:50px">
-        <label style="display:block">
-            <label>标题：</label>
-            <input type="text" id="markTitle"></input>
-        </label>
-        <label style="display:block">
-            <label>内容：</label>
-            <input type="text" id="markContent"></input>
-        </label>
-        <button style="width:100px;margin-top:10px" onclick="submitMarkPoint()" disabled class="btn btn-success">提交</button>        
-    </div>
 </body>
 
 <script>
-    /*前台网站预览该图片时实现：
+    var screenWidth = $(window).width();
+    console.log(screenWidth);
+    $('#canvas-container').width(screenWidth);
+    $('#canvas').attr('width',screenWidth)
+    $('#canvas').attr('height',screenWidth)
+
+       /*前台网站预览该图片时实现：
         （1）如果该图片超过4M以上，将进行图片切割加载，切割加载后组成完整图片显示，支持图片放大缩小、
             标注信息查看，每个图片页面提供二维码，扫一扫后支持手机浏览器预览该图片页面，
             预览效果同pc端效果一致，切图片加载速度流畅；
@@ -140,6 +139,39 @@
     var tempPointTitle;
     var tempTid;
 
+    Transform(canvas);
+    var af = new AlloyFinger(canvas,{
+        pinch:function(e){
+            var scaleStep = getScaleGap(scale,e.zoom-1);
+
+            // scale = Number(scale * e.zoom).toFixed(1);
+            scale = Number((scale + scaleStep).toFixed(1));
+            scale = scale < picScaleDirName[0] ? picScaleDirName[0] : scale;
+            scale = scale > picScaleDirName[picScaleDirName.length-1] ?  picScaleDirName[picScaleDirName.length-1] : scale;  
+            canvas.onmousewheel = null;
+            initParameters();
+            drawCanvas();
+            //showMarks();
+            console.log(e.zoom);
+            e.preventDefault();
+        },
+        pressMove:function(e){
+            canvasShiftX += e.deltaX;
+            if (Math.abs(canvasShiftX) > xShiftLength) {
+                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+            }
+            canvasShiftY += e.deltaY;
+            if (Math.abs(canvasShiftY) > yShiftLength) {
+                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+            }
+            adjustSlideBlockPos();
+            drawCanvas();
+            //showMarks();
+            console.log(e.deltaX,e.deltaY);
+            e.preventDefault();
+        }
+    })
+
     $.ajax({
         type: 'get',
         dataType: 'jsonp',
@@ -185,6 +217,8 @@
         }
     })
 
+
+
     function onShowSmallImgChange(e){
         if(event.target && event.target.checked){
             $('#pic').show();
@@ -208,7 +242,7 @@
         canvas.onmousewheel = null;
         initParameters();
         drawCanvas();
-        showMarks();
+        //showMarks();
     }
 
     /* 搜索标记位置 并对图片进行定位 */
@@ -244,7 +278,7 @@
                     canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
                 }
                 drawCanvas();
-                showMarks();
+                //showMarks();
 
                 break;
             }
@@ -303,7 +337,7 @@
         markPointY = originY;
         $('.setTitle button').removeAttr('disabled');
 
-        var innerHtml = '<div class="markPoint markPointPicked" style="top:'+(posY-15)+'px;left:'+(posX-15)+'px" title=""></div>';
+        var innerHtml = '<div class="markPoint markPointPicked" style="top:'+posY+'px;left:'+posX+'px" title=""></div>';
         $(container1).append(innerHtml);
     }
 
@@ -382,7 +416,7 @@
             }
             adjustSlideBlockPos();
             drawCanvas();
-            showMarks();
+            //showMarks();
         }
 
         canvas.onmouseup = function () {
@@ -427,7 +461,7 @@
                 canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
             }
             drawCanvas();
-            showMarks();
+            //showMarks();
 
         });
         $('.slide-block').bind('mouseup',function(){
@@ -484,7 +518,7 @@
         canvas.onmousewheel = null;
         initParameters();
         drawCanvas();
-        showMarks();
+        //showMarks();
     }
 
 
@@ -679,6 +713,7 @@
             loadImgNum++;
 
             if (loadImgNum == renderNum) {
+                showMarks();
                 canvas.onmousewheel = onmousewheel;
             }
         } else {
@@ -699,6 +734,7 @@
             img.onerror = function(){//错误处理  暂时先这样写了  烦
                 loadImgNum++;
                 if (loadImgNum == renderNum) {
+                    showMarks();
                     canvas.onmousewheel = onmousewheel;
                 }
             }

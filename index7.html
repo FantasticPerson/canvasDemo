@@ -38,38 +38,72 @@
             margin:0;
             padding: 0;
         }
+
+        .slide-block{
+            /* width: 100px; */
+            /* height: 50px; */
+            background: rgba(255,255,255,0.7); 
+            position: absolute;
+            cursor: move;
+        }
+
+        #pic {
+            position: relative;
+            position: absolute;
+            right: 0;
+            top: 0;
+            z-index: 10;
+            display: none;
+        }
+
+        .search-container{
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 0;
+            z-index: 5;
+        }
     </style>
 </head>
 
 <body>
     <!-- <div class="scale-btn-con" style="display:inline-block"></div> -->
     <div style="width:1000px;position:relative" id="canvas-container">
-            <div id="canvas" style="width:1000px;height:500px;position:relative;overflow:hidden" ></div>
-            <div class="mask" style="width:1000px;height:500px;top:0;left:0;position:absolute;background:rgba(0,0,0,0);z-index:5"></div>
+        <div id="canvas" style="width:1000px;height:500px;position:relative;overflow:hidden" ></div>
+        <div class="mask" style="width:1000px;height:500px;top:0;left:0;position:absolute;background:rgba(0,0,0,0);z-index:5"></div>
         <!-- <canvas id="canvas" width="1000" height="500" /> -->
     </div>
-    <button onclick="showSearch()" class="show-search btn btn-success">显示搜索框</button>
-    <div class="search-container">
-        <div>
-            <input id="search-title" type="text">
-            <button onclick="searchMarkAndLocate()" class="btn btn-success">搜索</button>
+    <div class="bootom-container" style="position:relative;margin-top:10px">
+        <button onclick="showSearch()" style="display:block" class="show-search btn btn-success">显示搜索框</button>
+        <button onclick="showSmallImg()" style="display:block" class="show-search btn btn-success">显示缩略图</button>
+        <div class="search-container">
+            <div>
+                <input id="search-title" type="text">
+                <button onclick="searchMarkAndLocate()" class="btn btn-success">搜索</button>
+            </div>
+            <div>
+                <label>标注标题:</label>
+                <span class="show-mark-title"></span>
+            </div>
+            <div>
+                <label>标注内容：</label>
+                <span class="show-mark-content"></span>
+            </div>
         </div>
-        <div>
-            <label>标注标题:</label>
-            <span class="show-mark-title"></span>
-        </div>
-        <div>
-            <label>标注内容：</label>
-            <span class="show-mark-content"></span>
+        <div id="pic">
+            <div class="slide-block"></div>
         </div>
     </div>
-
-    
 </body>
     
 <script>
     function showSearch(){
         $('.search-container').toggle();
+    }
+
+    function showSmallImg(){
+        $('#pic').toggle();
+        adjustSlideBlockPos();
     }
 
     var screenWidth = $(window).width();
@@ -106,7 +140,7 @@
 
     var canvas = document.getElementById('canvas');
 
-    var scale = 1, imgScale;
+    var scale = 10, imgScale;
     var imgWidth = 250, imgHeight = 250;
     var theWholeWidth, theWholeHeight, xLength, yLength;
     var xShiftLength, yShiftLength;
@@ -134,6 +168,9 @@
     var imgOnLoadArr = [];
     var drawInfoArr = [];
     var mask = document.getElementsByClassName('mask')[0];
+    var slideBlockWidth,slideBlockHeight;
+
+    var slideBlockDiv = document.getElementsByClassName('slide-block')[0];
 
     Transform(mask);
     var initScale = 1;
@@ -164,7 +201,57 @@
                 canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
             }
             drawCanvas();
-            console.log(e.deltaX,e.deltaY);
+            adjustSlideBlockPos();
+        }
+    })
+
+    Transform(slideBlockDiv);
+    var bf = new AlloyFinger(slideBlockDiv,{
+        
+        pressMove:function(e){
+            var paX = $('#pic')[0].offsetLeft;
+            var paY = $('#pic')[0].offsetTop;
+            var paW = $('#pic img')[0].offsetWidth;
+            var paH = $('#pic img')[0].offsetHeight;
+
+            var top = $('.slide-block').css('top');
+            top = Number(top.substring(0,top.length-2))
+            var left = $('.slide-block').css('left');
+            left = Number(left.substring(0,left.length-2))
+            console.log(e);
+            e.preventDefault();
+
+            var moveX = e.deltaX;
+            var moveY = e.deltaY;
+
+            top = top + moveY;
+            left = left + moveX;
+
+
+            // var top = y-slideBlockHeight/2 > 0 ? y-slideBlockHeight/2 : 0;
+            top = top + slideBlockHeight < paH ? top : paH - slideBlockHeight;
+            top = top < 0 ? 0 : top;
+
+            // var left = x - slideBlockWidth/2 > 0 ? x - slideBlockWidth/2 : 0;
+            left = left + slideBlockWidth < paW ? left : paW - slideBlockWidth;
+            left = left < 0 ? 0:left;
+
+            $('.slide-block').css({'top':top+'px','left':left+'px'});
+
+            var opX = theWholeWidth * ((left+slideBlockWidth/2) / paW);
+            var opY = theWholeHeight * ((top+slideBlockHeight/2) / paH);
+            
+            canvasShiftX = theWholeWidth / 2 - opX;
+            canvasShiftY = theWholeHeight / 2 - opY;
+
+            if (Math.abs(canvasShiftX) > xShiftLength) {
+                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
+            }
+
+            if (Math.abs(canvasShiftY) > yShiftLength) {
+                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
+            }
+            drawCanvas();
         }
     })
 
@@ -189,7 +276,7 @@
 
                 var smallPicPath = website +picPath;
 
-                var img = '<img src="'+smallPicPath+'" style="width:300px">'
+                var img = '<img src="'+smallPicPath+'" style="width:150px">'
                 $('#pic').append(img);
 
                 initParameters();
@@ -377,8 +464,19 @@
         yShiftLength = (theWholeHeight - canvasHeight) / 2;
         yShiftLength = yShiftLength < 0 ? 0 : yShiftLength;
 
+        var imgWidth = $('#pic img').width();
+        var imgHeight =  theWholeHeight*imgWidth/theWholeWidth;
+
+        slideBlockWidth = imgWidth * canvasWidth / theWholeWidth;
+        slideBlockWidth = slideBlockWidth > imgWidth ? imgWidth : slideBlockWidth;
+        slideBlockHeight = imgHeight * canvasHeight / theWholeHeight; 
+        slideBlockHeight = slideBlockHeight > imgHeight ? imgHeight : slideBlockHeight;
+
+        $('#pic .slide-block').css({width:slideBlockWidth+'px',height:slideBlockHeight+'px'})
+
         // clearExtraRect();
         adjustShiftLength();
+        adjustSlideBlockPos();
 
         /* 提前清除会留白的区域上的内容 */
         function clearExtraRect() {
@@ -444,6 +542,30 @@
                 theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
             }
         }
+    }
+
+    /* 调整 slideBlock 的位置 */
+    function adjustSlideBlockPos(){
+        var paW = $('#pic img')[0].offsetWidth;
+        var paH = $('#pic img')[0].offsetHeight;
+        var imgWidth = $('#pic img').width();
+        var imgHeight = theWholeHeight*imgWidth/theWholeWidth;
+        
+        var centerX = canvasWidth/2 - startX - canvasShiftX;
+        var centerY = canvasHeight/2 - startY - canvasShiftY;
+
+        var posX = centerX / theWholeWidth * imgWidth;
+        var posY = centerY / theWholeHeight * imgHeight;
+
+        var top = posY-slideBlockHeight/2 > 0 ? posY-slideBlockHeight/2 : 0;
+        top = top + slideBlockHeight < paH ? top : paH - slideBlockHeight;
+        top = top < 0 ? 0 : top;
+
+        var left = posX - slideBlockWidth/2 > 0 ? posX - slideBlockWidth/2 : 0;
+        left = left + slideBlockWidth < paW ? left : paW - slideBlockWidth;
+        left = left < 0 ? 0:left;
+
+        $('.slide-block').css({'top':top+'px','left':left+'px'});
     }
 
     /* 绘制 */

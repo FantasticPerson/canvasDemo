@@ -85,6 +85,7 @@
 </body>
 
 <script>
+    document.oncontextmenu=new Function("event.returnValue=false;");
     /*前台网站预览该图片时实现：
         （1）如果该图片超过4M以上，将进行图片切割加载，切割加载后组成完整图片显示，支持图片放大缩小、
             标注信息查看，每个图片页面提供二维码，扫一扫后支持手机浏览器预览该图片页面，
@@ -495,35 +496,15 @@
         var lastStartX = startX;
         var lastStartY = startY;
 
-        multiScale = Number((scale - parseInt(scale)).toFixed(8));
-        imgDirName = Math.floor(scale);
-        var nameArrIndex = 1;
-        for(var i=0;i<picScaleDirName.length;i++){
-            if(imgDirName < picScaleDirName[i]){
-                nameArrIndex = i-1;
-                break;
-            } else if(imgDirName == picScaleDirName[i]){
-                nameArrIndex = i;
-            }
-        }
-        
-        imgDirName = picScaleDirName[nameArrIndex];
-        imgNameArr = picNamesArr[nameArrIndex];
-        imgSizeArr = picResolutionArr[nameArrIndex];
-        imgTotalNum = imgNameArr.length;
-        xLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[1]);
-        yLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[0]);
+        initWidthAndHeight();
+        if(theWholeHeight < canvasHeight && theWholeWidth <canvasWidth){
+            var scaleX = canvasWidth / theWholeWidth;
+            var scaleY = canvasHeight / theWholeHeight;
 
-        multiScale = Number((scale - imgDirName).toFixed(8));
-        
-        theWholeWidth = 0;
-        theWholeHeight = 0;
-        for(var i=0;i<xLength;i++){
-            theWholeWidth += (Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName));
+            scale = scale*(scaleX < scaleY ? scaleX : scaleY);
+            initWidthAndHeight();
         }
-        for(var i=0;i<yLength;i++){
-            theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
-        }
+       
 
         startX = (canvasWidth - theWholeWidth) / 2;
         startY = (canvasHeight - theWholeHeight) / 2;
@@ -578,6 +559,38 @@
                 if(Math.abs(canvasShiftY) >yShiftLength){
                     canvasShiftY = canvasShiftY > 0 ? yShiftLength : - yShiftLength;
                 }
+            }
+        }
+
+        function initWidthAndHeight(){
+            multiScale = Number((scale - parseInt(scale)).toFixed(8));
+            imgDirName = Math.floor(scale);
+            var nameArrIndex = 1;
+            for(var i=0;i<picScaleDirName.length;i++){
+                if(imgDirName < picScaleDirName[i]){
+                    nameArrIndex = i-1;
+                    break;
+                } else if(imgDirName == picScaleDirName[i]){
+                    nameArrIndex = i;
+                }
+            }
+            
+            imgDirName = picScaleDirName[nameArrIndex];
+            imgNameArr = picNamesArr[nameArrIndex];
+            imgSizeArr = picResolutionArr[nameArrIndex];
+            imgTotalNum = imgNameArr.length;
+            xLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[1]);
+            yLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[0]);
+
+            multiScale = Number((scale - imgDirName).toFixed(8));
+            
+            theWholeWidth = 0;
+            theWholeHeight = 0;
+            for(var i=0;i<xLength;i++){
+                theWholeWidth += (Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName));
+            }
+            for(var i=0;i<yLength;i++){
+                theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
             }
         }
     }

@@ -33,13 +33,6 @@
             
             /* background-color: green; */
         }
-        .slide-block{
-            /* width: 100px; */
-            /* height: 50px; */
-            background: rgba(255,255,255,0.7); 
-            position: absolute;
-            cursor: move;
-        }
 
         *{
             margin:0;
@@ -50,16 +43,8 @@
 
 <body>
     <div class="scale-btn-con" style="display:inline-block"></div>
-    <!-- <button onclick="onAddIconClick()" class="btn btn-success">标注</button>
-    <label style="vertical-align:middle">
-        <input type="checkbox" onchange="onShowSmallImgChange()" style="width:20px;height:20px">
-        <lable style="vertical-align:super">缩略图</lable>
-    </label> -->
     <div style="width:1000px;position:relative" id="canvas-container">
-        <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
-    </div>
-    <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:5;display:none">
-        <div class="slide-block"></div>
+        <canvas id="canvas" width="1000" height="500" />
     </div>
     <div>
         <div>
@@ -135,27 +120,27 @@
     var markDataArr;
     var picPath;
     var picInfoArr=[];
-    var slideBlockWidth,slideBlockHeight;
     var tempPointTitle;
     var tempTid;
+    var imgOnLoadArr = [];
+    var drawInfoArr = [];
 
     Transform(canvas);
     var af = new AlloyFinger(canvas,{
         pinch:function(e){
+            e.preventDefault();
             var scaleStep = getScaleGap(scale,e.zoom-1);
-
-            // scale = Number(scale * e.zoom).toFixed(1);
             scale = Number((scale + scaleStep).toFixed(1));
             scale = scale < picScaleDirName[0] ? picScaleDirName[0] : scale;
             scale = scale > picScaleDirName[picScaleDirName.length-1] ?  picScaleDirName[picScaleDirName.length-1] : scale;  
             canvas.onmousewheel = null;
             initParameters();
             drawCanvas();
-            //showMarks();
             console.log(e.zoom);
-            e.preventDefault();
+            
         },
         pressMove:function(e){
+            e.preventDefault();
             canvasShiftX += e.deltaX;
             if (Math.abs(canvasShiftX) > xShiftLength) {
                 canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
@@ -164,11 +149,8 @@
             if (Math.abs(canvasShiftY) > yShiftLength) {
                 canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
             }
-            adjustSlideBlockPos();
             drawCanvas();
-            //showMarks();
             console.log(e.deltaX,e.deltaY);
-            e.preventDefault();
         }
     })
 
@@ -217,17 +199,6 @@
         }
     })
 
-
-
-    function onShowSmallImgChange(e){
-        if(event.target && event.target.checked){
-            $('#pic').show();
-            adjustSlideBlockPos();
-        } else {
-            $('#pic').hide();
-        }
-    }
-
     function generateScaleTitle(){
         var html = '';
         for(var i = 0;i<picScaleDirName.length;i++){
@@ -242,7 +213,6 @@
         canvas.onmousewheel = null;
         initParameters();
         drawCanvas();
-        //showMarks();
     }
 
     /* 搜索标记位置 并对图片进行定位 */
@@ -278,67 +248,9 @@
                     canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
                 }
                 drawCanvas();
-                //showMarks();
-
                 break;
             }
         }
-    }
-
-    function onAddIconClick(){
-        addIcon = true;
-    }
-
-    /* 提交标记信息 */
-    function submitMarkPoint(){
-        var title = document.getElementById('markTitle').value;
-        var content = document.getElementById('markContent').value;
-        $('.setTitle button').attr('disabled','disabled');
-        $.ajax({
-            type:'post',
-            dataType:'jsonp',
-            url:mergeMarkInfo,
-            async:'true',
-            data:{
-                msgId:msgId,
-                markx:Number((markPointX/theWholeWidth).toFixed(8)),
-                marky:Number((markPointY/theWholeHeight).toFixed(8)),
-                marktitle:title,
-                markps:content
-            },
-            success:function(data){
-                $.ajax({
-                    type:'get',
-                    url:getMarkInfoMsg,
-                    dataType:'jsonp',
-                    async:true,
-                    data:{
-                       msgId: msgId
-                    },
-                    success:function(data){
-                        markDataArr=data;
-                        showMarks();
-                    }
-                })
-            }
-        })        
-    }
-
-    var markPointX,markPointY;
-
-    function addIconFunc(posX,posY){
-        var container1 = document.getElementById('canvas-container');
-        var originX = posX - startX - canvasShiftX
-        var originY = posY - startY - canvasShiftY;
-
-        var container = document.getElementsByClassName('setTitle');
-        container[0].style.visibility = '';
-        markPointX = originX;
-        markPointY = originY;
-        $('.setTitle button').removeAttr('disabled');
-
-        var innerHtml = '<div class="markPoint markPointPicked" style="top:'+posY+'px;left:'+posX+'px" title=""></div>';
-        $(container1).append(innerHtml);
     }
 
     $("#canvas-container").on("click",".markPoint", function(e) {
@@ -379,7 +291,7 @@
                 var posY = theWholeHeight*markArr[i].marky;
                 var x = startX +  posX + canvasShiftX-15;
                 var y = startY +  posY + canvasShiftY-15;
-                if(x < 0 || x > canvasWidth || y < 0 || y>canvasHeight){
+                if(x+10 < 0 || x+20 > canvasWidth || y+10 < 0 || y+20>canvasHeight){
                     continue;
                 }
                 if(tempPointTitle == markArr[i].markTitle || tempTid == markArr[i].id){
@@ -391,90 +303,6 @@
             $(container).append(innerHtml);
         }
     }
-
-    /* 通过拖动图片进行显示 */
-    canvas.onmousedown = function (e) {
-        var pos = windowToCanvas(canvas, event.clientX, event.clientY);
-        if(addIcon){
-            addIcon = false;
-            addIconFunc(pos.x,pos.y);
-            return;
-        }
-        canvas.onmousemove = function () {
-            canvas.style.cursor = "move";
-            var pos1 = windowToCanvas(canvas, event.clientX, event.clientY);
-            var x = pos1.x - pos.x;
-            var y = pos1.y - pos.y;
-            pos = pos1;
-            canvasShiftX += x;
-            if (Math.abs(canvasShiftX) > xShiftLength) {
-                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
-            }
-            canvasShiftY += y;
-            if (Math.abs(canvasShiftY) > yShiftLength) {
-                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
-            }
-            adjustSlideBlockPos();
-            drawCanvas();
-            //showMarks();
-        }
-
-        canvas.onmouseup = function () {
-            canvas.onmousemove = null;
-            canvas.onmouseup = null;
-            canvas.style.cursor = "";
-        }
-    }
-
-     /*通过移动缩略图上的滑块 移动图片的显示*/
-     $('.slide-block').bind('mousedown',function(e1){
-        var paX = $('#pic')[0].offsetLeft;
-        var paY = $('#pic')[0].offsetTop;
-        var paW = $('#pic img')[0].offsetWidth;
-        var paH = $('#pic img')[0].offsetHeight;
-
-        $('#pic').bind('mousemove',function(e){
-            var x = e.originalEvent.x-15;
-            var y = e.originalEvent.y-60;
-
-            var top = y-slideBlockHeight/2 > 0 ? y-slideBlockHeight/2 : 0;
-            top = top + slideBlockHeight < paH ? top : paH - slideBlockHeight;
-            top = top < 0 ? 0 : top;
-
-            var left = x - slideBlockWidth/2 > 0 ? x - slideBlockWidth/2 : 0;
-            left = left + slideBlockWidth < paW ? left : paW - slideBlockWidth;
-            left = left < 0 ? 0:left;
-
-            $('.slide-block').css({'top':top+'px','left':left+'px'});
-
-            var opX = theWholeWidth * ((left+slideBlockWidth/2) / paW);
-            var opY = theWholeHeight * ((top+slideBlockHeight/2) / paH);
-            
-            canvasShiftX = theWholeWidth / 2 - opX;
-            canvasShiftY = theWholeHeight / 2 - opY;
-
-            if (Math.abs(canvasShiftX) > xShiftLength) {
-                canvasShiftX = canvasShiftX > 0 ? xShiftLength : -xShiftLength;
-            }
-
-            if (Math.abs(canvasShiftY) > yShiftLength) {
-                canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
-            }
-            drawCanvas();
-            //showMarks();
-
-        });
-        $('.slide-block').bind('mouseup',function(){
-            $('.slide-block').unbind('mouseup');
-            $('#pic').unbind('mousemove');
-            $('#pic').unbind('mouseleave');
-        });
-        $('#pic').bind('mouseleave',function(){
-            $('.slide-block').unbind('mouseup');
-            $('#pic').unbind('mousemove');
-            $('#pic').unbind('mouseleave');
-        })
-    })
 
     /*  坐标换算 */
     function windowToCanvas(canvas, x, y) {
@@ -508,20 +336,6 @@
         return wheelData > 0 ? scaleStep : -scaleStep;
     }
 
-    /* 鼠标滚轮滚动时进行缩放 */
-    function onmousewheel(e) {
-        var scaleStep = getScaleGap(scale,e.wheelDelta);
-
-        scale = Number((scale + scaleStep).toFixed(1));
-        scale = scale < picScaleDirName[0] ? picScaleDirName[0] : scale;
-        scale = scale > picScaleDirName[picScaleDirName.length-1] ?  picScaleDirName[picScaleDirName.length-1] : scale;  
-        canvas.onmousewheel = null;
-        initParameters();
-        drawCanvas();
-        //showMarks();
-    }
-
-
     /* 初始化参数 */
     function initParameters() {
         var lastWholeWidth = theWholeWidth;
@@ -529,34 +343,16 @@
         var lastStartX = startX;
         var lastStartY = startY;
 
-        multiScale = Number((scale - parseInt(scale)).toFixed(8));
-        imgDirName = Math.floor(scale);
-        var nameArrIndex = 1;
-        for(var i=0;i<picScaleDirName.length;i++){
-            if(imgDirName < picScaleDirName[i]){
-                nameArrIndex = i-1;
-                break;
-            } else if(imgDirName == picScaleDirName[i]){
-                nameArrIndex = i;
-            }
-        }
-        
-        imgDirName = picScaleDirName[nameArrIndex];
-        imgNameArr = picNamesArr[nameArrIndex];
-        imgSizeArr = picResolutionArr[nameArrIndex];
-        imgTotalNum = imgNameArr.length;
-        xLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[1]);
-        yLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[0]);
 
-        multiScale = Number((scale - imgDirName).toFixed(8));
+        initHeightAndWidth();
         
-        theWholeWidth = 0;
-        theWholeHeight = 0;
-        for(var i=0;i<xLength;i++){
-            theWholeWidth += (Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName));
-        }
-        for(var i=0;i<yLength;i++){
-            theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
+
+        if(theWholeHeight < canvasHeight && theWholeWidth <canvasWidth){
+            var scaleX = canvasWidth / theWholeWidth;
+            var scaleY = canvasHeight / theWholeHeight;
+
+            scale = scale*(scaleX < scaleY ? scaleX : scaleY);
+            initHeightAndWidth();
         }
 
         startX = (canvasWidth - theWholeWidth) / 2;
@@ -567,19 +363,8 @@
         yShiftLength = (theWholeHeight - canvasHeight) / 2;
         yShiftLength = yShiftLength < 0 ? 0 : yShiftLength;
 
-        var imgWidth = $('#pic img').width();
-        var imgHeight = theWholeHeight*imgWidth/theWholeWidth;
-
-        slideBlockWidth = imgWidth * canvasWidth / theWholeWidth;
-        slideBlockWidth = slideBlockWidth > imgWidth ? imgWidth : slideBlockWidth;
-        slideBlockHeight = imgHeight * canvasHeight / theWholeHeight; 
-        slideBlockHeight = slideBlockHeight > imgHeight ? imgHeight : slideBlockHeight;
-
-        $('#pic .slide-block').css({width:slideBlockWidth+'px',height:slideBlockHeight+'px'})
-
         clearExtraRect();
         adjustShiftLength();
-        adjustSlideBlockPos();
 
         /* 提前清除会留白的区域上的内容 */
         function clearExtraRect() {
@@ -614,30 +399,37 @@
                 }
             }
         }
-    }
+        function initHeightAndWidth(){
+            multiScale = Number((scale - parseInt(scale)).toFixed(8));
+            imgDirName = Math.floor(scale);
+            var nameArrIndex = 1;
+            for(var i=0;i<picScaleDirName.length;i++){
+                if(imgDirName < picScaleDirName[i]){
+                    nameArrIndex = i-1;
+                    break;
+                } else if(imgDirName == picScaleDirName[i]){
+                    nameArrIndex = i;
+                }
+            }
+            
+            imgDirName = picScaleDirName[nameArrIndex];
+            imgNameArr = picNamesArr[nameArrIndex];
+            imgSizeArr = picResolutionArr[nameArrIndex];
+            imgTotalNum = imgNameArr.length;
+            xLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[1]);
+            yLength = Number(imgNameArr[imgNameArr.length - 1].split('-')[0]);
 
-    /* 调整 slideBlock 的位置 */
-    function adjustSlideBlockPos(){
-        var paW = $('#pic img')[0].offsetWidth;
-        var paH = $('#pic img')[0].offsetHeight;
-        var imgWidth = $('#pic img').width();
-        var imgHeight = theWholeHeight*imgWidth/theWholeWidth;
-        
-        var centerX = canvasWidth/2 - startX - canvasShiftX;
-        var centerY = canvasHeight/2 - startY - canvasShiftY;
-
-        var posX = centerX / theWholeWidth * imgWidth;
-        var posY = centerY / theWholeHeight * imgHeight;
-
-        var top = posY-slideBlockHeight/2 > 0 ? posY-slideBlockHeight/2 : 0;
-        top = top + slideBlockHeight < paH ? top : paH - slideBlockHeight;
-        top = top < 0 ? 0 : top;
-
-        var left = posX - slideBlockWidth/2 > 0 ? posX - slideBlockWidth/2 : 0;
-        left = left + slideBlockWidth < paW ? left : paW - slideBlockWidth;
-        left = left < 0 ? 0:left;
-
-        $('.slide-block').css({'top':top+'px','left':left+'px'});
+            multiScale = Number((scale - imgDirName).toFixed(8));
+            
+            theWholeWidth = 0;
+            theWholeHeight = 0;
+            for(var i=0;i<xLength;i++){
+                theWholeWidth += (Number(imgSizeArr[i].split('*')[0])*(1+multiScale/imgDirName));
+            }
+            for(var i=0;i<yLength;i++){
+                theWholeHeight += (Number(imgSizeArr[i*xLength].split('*')[1])*(1+multiScale/imgDirName))
+            }
+        }
     }
 
     /* 绘制 */
@@ -645,7 +437,16 @@
         loadImgNum = 0;
         renderNum = 0;
         var i = 0;
+        for(var i=0;i<imgOnLoadArr.length;i++){
+            console.log(imgOnLoadArr[i]);
+
+            imgOnLoadArr[i].onload = null;
+            imgOnLoadArr[i] = null;
+        }
+        imgOnLoadArr = [];
+        drawInfoArr = [];
         var renderArr = [];
+        i = 0;
         while (i < imgNameArr.length) {
             var picName = imgNameArr[i];
             var posIndexX = picName.split('-')[1];
@@ -709,24 +510,33 @@
     function load(src, x, y, posX, posY,width,height) {
         context.clearRect(x, y, imgWidth, imgHeight);
         if (imgArr[imgDirName] && imgArr[imgDirName][posX + ',' + posY]) {
+            // drawInfoArr.push([imgArr[imgDirName][posX + ',' + posY], x, y, width, height]);
             context.drawImage(imgArr[imgDirName][posX + ',' + posY], x, y, width, height);
             loadImgNum++;
 
             if (loadImgNum == renderNum) {
+                draw();
                 showMarks();
-                canvas.onmousewheel = onmousewheel;
             }
         } else {
             var img = new Image();
             img.src = src;
+            imgOnLoadArr.push(img);
             img.onload = function () {
+                imgArr[imgDirName][posX + ',' + posY] = img;
+                var index = imgOnLoadArr.indexOf(img);
+                if(index){
+                    imgOnLoadArr.splice(index,1);
+                }
+                // drawInfoArr.push([img, x, y, width, height])
                 context.drawImage(img, x, y, width, height);
                 loadImgNum++;
 
                 if (loadImgNum == renderNum) {
-                    canvas.onmousewheel = onmousewheel;
+                    draw();
+                    showMarks();
                 }
-                imgArr[imgDirName][posX + ',' + posY] = img;
+                
             }
             if (!imgArr[imgDirName]) {
                 imgArr[imgDirName] = {};
@@ -734,12 +544,22 @@
             img.onerror = function(){//错误处理  暂时先这样写了  烦
                 loadImgNum++;
                 if (loadImgNum == renderNum) {
+                    draw();
                     showMarks();
-                    canvas.onmousewheel = onmousewheel;
                 }
             }
-            
         }
+
+        function draw(){
+            // for(var i=0;i<drawInfoArr.length;i++){
+                // var item = drawInfoArr[i];
+                // context.drawImage(item[0],item[1],item[2],item[3],item[4])
+            // }
+        }
+
+        // function draw(){
+
+        // }
     }
 </script>
 

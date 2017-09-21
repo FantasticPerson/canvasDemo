@@ -18,7 +18,7 @@
             height:30px;
             /* background: red; */
             position: absolute;
-            z-index: 2;
+            z-index: 10;
             cursor: pointer;
             /* border:10px solid rgba*(255,255,255,0) */
         }
@@ -40,6 +40,10 @@
         *{
             margin:0;
             padding: 0;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -52,9 +56,10 @@
         <lable style="vertical-align:super">缩略图</lable>
     </label>
     <div style="margin:20px 5px 0 0;width:1000px;position:relative" id="canvas-container">
-        <canvas id="canvas" width="1000" height="500" style="border:1px solid #ccc;" />
+        <div id="canvas" style="width:1000px;height:500px;border:1px solid #ccc;position:relative;overflow:hidden" ></div>
+        <div class="mask" style="width:1000px;height:500px;top:0;left:0;position:absolute;background:rgba(0,0,0,0);z-index:5"></div>
     </div>
-    <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:5;display:none">
+    <div id="pic" style="width:300px;position:absolute;top:60px;left:15px;z-index:15;display:none">
         <div class="slide-block"></div>
     </div>
     <div style="margin-left:1010px;margin-top:-500px">
@@ -112,7 +117,7 @@
     var website = "http://61.155.85.77:6601/";
 
     var canvas = document.getElementById('canvas');
-    var context = canvas.getContext('2d');
+    var mask = document.getElementsByClassName('mask')[0];
 
     var scale = 1, imgScale;
     var imgWidth = 250, imgHeight = 250;
@@ -123,8 +128,8 @@
     var imgArr = {}, loadImgNum = 0, imgTotalNum,imgSizeArr;
     var imgIcon, iconAddArr = [],addIcon=false;
     var imgDirName, imgNameArr;
-    var canvasHeight = canvas.height;
-    var canvasWidth = canvas.width;
+    var canvasHeight = 500;
+    var canvasWidth = 1000;
     var renderNum = 0;
     var multiScale;
     var picRootDirName;
@@ -209,10 +214,9 @@
 
     function onScaleBtnClicked(){
         scale = Number(event.target.innerHTML);
-        canvas.onmousewheel = null;
+        mask.onmousewheel = null;
         initParameters();
         drawCanvas();
-        // showMarks();
     }
 
     /* 搜索标记位置 并对图片进行定位 */
@@ -248,7 +252,6 @@
                     canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
                 }
                 drawCanvas();
-                // showMarks();
 
                 break;
             }
@@ -311,8 +314,11 @@
         $(container1).append(innerHtml);
     }
 
+    $("#canvas-container").on("dragstart","img", function(e) {
+        return false;
+    });
+
     $("#canvas-container").on("click",".markPoint", function(e) {
-        console.log(e.currentTarget.getAttribute('tid'));
         var tid = e.currentTarget.getAttribute('tid');
         var arr = markDataArr.imgMarkList;
         var title = e.currentTarget.title;
@@ -329,7 +335,6 @@
                     content.innerText = arr[i].markps;
                 }
                 drawCanvas();
-                // showMarks();
                 break;
             }
         }
@@ -338,6 +343,7 @@
 
     /* 显示所有标记点 */
     function showMarks(data){
+        // return;
         if(markDataArr){
             $('.markPoint').remove();
             var container = document.getElementById('canvas-container');
@@ -363,16 +369,16 @@
     }
 
     /* 通过拖动图片进行显示 */
-    canvas.onmousedown = function (e) {
-        var pos = windowToCanvas(canvas, event.clientX, event.clientY);
+    mask.onmousedown = function (e) {
+        var pos = {x:event.clientX, y:event.clientY};
         if(addIcon){
             addIcon = false;
             addIconFunc(pos.x,pos.y);
             return;
         }
-        canvas.onmousemove = function () {
-            canvas.style.cursor = "move";
-            var pos1 = windowToCanvas(canvas, event.clientX, event.clientY);
+        mask.onmousemove = function () {
+            mask.style.cursor = "move";
+            var pos1 = {x:event.clientX, y:event.clientY};
             var x = pos1.x - pos.x;
             var y = pos1.y - pos.y;
             pos = pos1;
@@ -386,13 +392,12 @@
             }
             adjustSlideBlockPos();
             drawCanvas();
-            // showMarks();
         }
 
-        canvas.onmouseup = function () {
-            canvas.onmousemove = null;
-            canvas.onmouseup = null;
-            canvas.style.cursor = "";
+        mask.onmouseup = function () {
+            mask.onmousemove = null;
+            mask.onmouseup = null;
+            mask.style.cursor = "";
         }
     }
 
@@ -431,7 +436,6 @@
                 canvasShiftY = canvasShiftY > 0 ? yShiftLength : -yShiftLength;
             }
             drawCanvas();
-            // showMarks();
 
         });
         $('.slide-block').bind('mouseup',function(){
@@ -445,16 +449,6 @@
             $('#pic').unbind('mouseleave');
         })
     })
-
-    /*  坐标换算 */
-    function windowToCanvas(canvas, x, y) {
-        var bbox = canvas.getBoundingClientRect();
-        console.log(bbox);
-        return {
-            x: x - bbox.left - (bbox.width - canvas.width) / 2,
-            y: y - bbox.top - (bbox.height - canvas.height) / 2
-        };
-    }
 
     /* 获取缩放比例 */
     function getScaleGap(scale,wheelData){
@@ -485,10 +479,9 @@
         scale = Number((scale + scaleStep).toFixed(1));
         scale = scale < picScaleDirName[0] ? picScaleDirName[0] : scale;
         scale = scale > picScaleDirName[picScaleDirName.length-1] ?  picScaleDirName[picScaleDirName.length-1] : scale;  
-        canvas.onmousewheel = null;
+        mask.onmousewheel = null;
         initParameters();
         drawCanvas();
-        // showMarks();
     }
 
 
@@ -526,7 +519,7 @@
 
         $('#pic .slide-block').css({width:slideBlockWidth+'px',height:slideBlockHeight+'px'})
 
-        clearExtraRect();
+        //clearExtraRect();
         adjustShiftLength();
         adjustSlideBlockPos();
 
@@ -623,21 +616,11 @@
 
     /* 绘制 */
     function drawCanvas() {
-        loadImgNum = 0;
-        renderNum = 0;
+        mask.onmousewheel = null;
+        $('.mapImg').remove();
         var i = 0;
 
-        for(var i=0;i<imgOnLoadArr.length;i++){
-            // console.log(imgOnLoadArr[i]);
-
-            imgOnLoadArr[i].onload = null;
-            imgOnLoadArr[i] = null;
-        }
-        imgOnLoadArr = [];
-
-        i = 0;
-
-        var renderArr = [];
+        var innerHTML = "";
         while (i < imgNameArr.length) {
             var picName = imgNameArr[i];
             var posIndexX = picName.split('-')[1];
@@ -660,32 +643,24 @@
             posY = parseInt(startY) + posY + parseInt(canvasShiftY);
 
             if (shouldRender(posX, posY)) {
-                renderNum++;
-                renderArr.push({
-                    imgDirName: imgDirName,
-                    picName: picName,
-                    posX: posX,
-                    posY: posY,
-                    posIndexX: posIndexX,
-                    posIndexY: posIndexY,
-                    width:width,
-                    height:height                                                                         
-                })
+                var source = website +picRootDir+'/'+ imgDirName + '/' + picName + '.'+picSuffix
+                innerHTML+= '<img class="mapImg" src="'+source+'" style="position:absolute;top:'+posY+'px;left:'+posX
+                +'px;width:'+width+'px;height:'+height+'px;user-select: none;">';
             }
             i++;
         }
 
-        for (var i = 0; i < renderArr.length; i++) {
-            var item = renderArr[i];
-            load(website +picRootDir+'/'+ item.imgDirName + '/' + item.picName + '.'+picSuffix, item.posX, item.posY, item.posIndexX, item.posIndexY,item.width,item.height);
-        }
+        $(canvas).append(innerHTML);
+        mask.onmousewheel = onmousewheel;
+
+        showMarks();
 
         /* 判断图片是否在显示区域 从而决定是否去加载图片 */
         function shouldRender(x, y) {
-            var bool1 = x >= 0 && x <= canvasWidth;
-            var bool2 = y >= 0 && y <= canvasHeight;
-            var bool3 = x + imgWidth*(1+multiScale/imgDirName) >= 0 && x + imgWidth*(1+multiScale/imgDirName) <= canvasWidth;
-            var bool4 = y + imgHeight*(1+multiScale/imgDirName) >= 0 && y + imgHeight*(1+multiScale/imgDirName) <= canvasHeight;
+            var bool1 = x >= 0 && x <= 1000;
+            var bool2 = y >= 0 && y <= 500;
+            var bool3 = x + imgWidth*(1+multiScale/imgDirName) >= 0 && x + imgWidth*(1+multiScale/imgDirName) <= 1000;
+            var bool4 = y + imgHeight*(1+multiScale/imgDirName) >= 0 && y + imgHeight*(1+multiScale/imgDirName) <= 500;
 
             var bool12 = bool1 && bool2;
             var bool14 = bool1 && bool4;
@@ -693,51 +668,6 @@
             var bool34 = bool3 && bool4;
 
             return (bool12 || bool14 || bool32 || bool34);
-        }
-    }
-
-    /* 加载图片 */
-    function load(src, x, y, posX, posY,width,height) {
-        context.clearRect(x, y, imgWidth, imgHeight);
-        if (imgArr[imgDirName] && imgArr[imgDirName][posX + ',' + posY]) {
-            context.drawImage(imgArr[imgDirName][posX + ',' + posY], x, y, width, height);
-            loadImgNum++;
-
-            if (loadImgNum == renderNum) {
-                canvas.onmousewheel = onmousewheel;
-                showMarks();
-            }
-        } else {
-            var img = new Image();
-            img.src = src;
-            imgOnLoadArr.push(img);
-            img.onload = function () {
-
-                imgArr[imgDirName][posX + ',' + posY] = img;
-                var index = imgOnLoadArr.indexOf(img);
-                if(index){
-                    imgOnLoadArr.splice(index,1);
-                }
-                context.drawImage(img, x, y, width, height);
-                loadImgNum++;
-
-                if (loadImgNum == renderNum) {
-                    canvas.onmousewheel = onmousewheel;
-                    showMarks();
-                }
-                imgArr[imgDirName][posX + ',' + posY] = img;
-            }
-            if (!imgArr[imgDirName]) {
-                imgArr[imgDirName] = {};
-            }
-            img.onerror = function(){//错误处理  暂时先这样写了  烦
-                loadImgNum++;
-                if (loadImgNum == renderNum) {
-                    canvas.onmousewheel = onmousewheel;
-                    showMarks();
-                }
-            }
-            
         }
     }
 </script>
